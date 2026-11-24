@@ -1,0 +1,13 @@
+{
+  "app": "S-BUILD Control",
+  "version": "0.1.0",
+  "modules": [
+    "projects",
+    "documents",
+    "invitations",
+    "reports",
+    "materials",
+    "telegram"
+  ],
+  "supabase_project": "nwwrxisppqarulclufaf"
+}
