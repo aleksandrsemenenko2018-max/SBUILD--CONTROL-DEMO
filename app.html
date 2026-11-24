@@ -1,135 +1,45 @@
 <!doctype html><html lang="uk"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#152331"><title>S-BUILD Control · Кабінет</title><style>
-:root{--navy:#152331;--gold:#c5a060}
-body{background:#f5f6f8;color:#1c2937;font:15px/1.5 system-ui}
-header{background:linear-gradient(115deg,#111d2a,#293e52);border-bottom:3px solid var(--gold);padding:28px 5%;box-shadow:0 6px 20px #14243522}
-header h1{font-size:clamp(26px,4vw,34px);letter-spacing:.04em}
-header span{color:#e0c99d;font-size:13px;letter-spacing:.04em}
-main{max-width:1100px}
-section{border:1px solid #e6e9ed;border-radius:16px;padding:clamp(18px,3vw,28px);box-shadow:0 9px 30px #1424350c}
-h2{font-size:21px;margin-top:0}h3{margin-top:28px}
-button{background:#293e52;border-radius:9px;font-weight:600}
-button:hover{background:#40576c}
-form button{background:#aa8244}form button:hover{background:#906b35}
-input,select{border:1px solid #d3d9df;background:#fff;color:#1c2937}
-input:focus,select:focus{outline:2px solid #c5a06066;border-color:var(--gold)}
-nav{background:#e8ecf1;padding:8px;border-radius:13px;gap:6px}
-nav button{background:transparent;color:#425268;flex:1 1 auto}
-nav button.on{background:#152331;color:#f4dfb7;box-shadow:0 3px 10px #15233124}
-nav button:hover{background:#344b61;color:#fff}
-#identity{background:#fff;border-left:4px solid var(--gold);padding:12px 15px;border-radius:9px;color:#415062;font-weight:600}
-#status{background:#fffaf0;color:#745a30;border:1px solid #e8d9bc;border-radius:9px;padding:11px 15px}
-.item{border-color:#e7eaee;display:flex;align-items:center;flex-wrap:wrap;gap:8px}
-.item span{flex:1 1 200px}.item button{padding:8px 11px;font-size:13px}
-#inviteShare{padding:16px;border:1px solid #e7d9bc;background:#fbf8f0;border-radius:12px;margin:14px 0}
-#inviteResult{overflow-wrap:anywhere;color:#876530;font-weight:600}
-.hidden{display:none!important}
-@media(max-width:600px){nav button{flex:1 1 42%;padding:10px 7px}main{padding:0 12px}header{padding:24px 20px}}
-</style><style>
-/* Mobile-first layout refinement, final overrides */
-html{-webkit-text-size-adjust:100%}
-body{font-size:15px!important;line-height:1.55!important}
-header{padding:24px 20px!important}
-header h1{font-size:27px!important;line-height:1.18!important;margin-bottom:10px!important}
-header span{display:block;font-size:12px!important;line-height:1.5!important}
-main{width:100%;max-width:1000px;margin:18px auto!important;padding:0 14px!important}
-section{padding:22px!important;margin:0 0 18px!important;border-radius:14px!important}
-#identity{margin-bottom:14px!important;padding:13px 16px!important;line-height:1.5!important}
-#status{margin:0 0 18px!important;padding:12px 15px!important}
-nav{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important;margin:0 0 18px!important;padding:12px!important}
-nav button{display:block!important;width:100%!important;min-width:0!important;min-height:48px!important;padding:10px 8px!important;font-size:14px!important;text-align:center!important;line-height:1.3!important}
-nav #logout{grid-column:1/-1!important;background:#263442!important;border-color:#4c5966!important}
-h2{font-size:23px!important;line-height:1.3!important;margin:0 0 23px!important}
-h3{font-size:19px!important;line-height:1.35!important;margin:30px 0 15px!important}
-form{display:flex!important;flex-direction:column!important;gap:0!important;width:100%!important}
-form>label{display:block!important;width:100%!important;margin:0 0 5px!important;line-height:1.45!important}
-label{display:block!important;font-size:14px!important;font-weight:600!important}
-label>input,label>select{display:block!important;width:100%!important;min-width:0!important;max-width:100%!important;box-sizing:border-box!important;margin:8px 0 16px!important}
-form>button{display:block!important;width:100%!important;min-width:0!important;max-width:100%!important;margin:5px 0 8px!important;padding:14px 16px!important;min-height:50px!important;font-size:14px!important;border-radius:10px!important}
-#inviteForm{display:flex!important;flex-direction:column!important;align-items:stretch!important}
-#inviteForm>button{grid-column:auto!important;justify-self:auto!important}
-#inviteShare{display:flex!important;flex-direction:column!important;gap:13px!important;padding:19px!important;margin:20px 0 30px!important}
-#inviteShare>label{display:block!important;width:100%!important}
-#inviteShare input{display:block!important;width:100%!important;min-width:0!important;margin:9px 0 3px!important;font-size:13px!important}
-#inviteShare>button{display:block!important;width:100%!important;min-height:52px!important;padding:13px 14px!important;margin:0!important;font-size:14px!important;line-height:1.35!important;border-radius:10px!important}
-#inviteResult{font-size:14px!important;overflow-wrap:anywhere!important;padding:15px 0!important;line-height:1.65!important}
-#projectForm .grid{display:flex!important;flex-direction:column!important;gap:0!important}
-#projectForm .grid>label{display:block!important;width:100%!important}
-#projectForm .grid input{display:block!important;width:100%!important}
-#projectList .item,#reportList .item{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:12px!important;padding:18px 0!important}
-#projectList .item button,#reportList .item button{align-self:stretch!important;min-height:44px!important}
-#approvalList .item{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important}
-#approvalList .item span{grid-column:1/-1!important}
-#approvalList .item button{width:100%!important}
-#drawings input[type=file]{padding:12px!important;min-height:52px!important}
-#openPdf{display:block!important;width:100%!important;min-height:48px!important;margin-top:8px!important}
-@media(min-width:750px){main{padding:0 24px!important}nav{grid-template-columns:repeat(5,minmax(0,1fr))!important}nav #logout{grid-column:auto!important}#inviteForm{max-width:580px!important}#inviteShare{max-width:640px!important}form>button{width:auto!important;align-self:flex-start!important;min-width:220px!important}#inviteShare>button{width:100%!important}}
-</style><style>
-/* S-BUILD: precise, consistent spacing and visual hierarchy */
-:root{--space-1:6px;--space-2:12px;--space-3:18px;--space-4:24px;--space-5:32px}
-body{letter-spacing:.005em}
-section{padding:clamp(20px,3vw,32px)!important;margin-bottom:20px!important}
-h2{font-weight:650;letter-spacing:.005em;margin-bottom:22px!important}
-h3{font-weight:650;margin:30px 0 16px!important}
-label{font-size:13px!important;letter-spacing:.02em}
-input,select{min-height:46px!important;margin:7px 0 17px!important}
-button{min-height:43px!important;padding:10px 18px!important;line-height:1.3!important;white-space:normal}
-nav{gap:8px!important;padding:9px!important}
-nav button{min-height:44px!important}
-form{margin-bottom:12px}
-#inviteForm{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:20px;row-gap:4px;align-items:end}
-#inviteForm>button{grid-column:1/-1;justify-self:start;margin-top:4px;min-width:230px}
-#inviteResult{padding:12px 0!important;line-height:1.6}
-#inviteShare{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px;padding:22px!important;margin:20px 0 26px!important;align-items:stretch}
-#inviteShare>label{grid-column:1/-1;margin:0}
-#inviteShare input{margin-bottom:0!important}
-#inviteShare>button{width:100%;min-height:48px!important;margin:0!important}
-#inviteShare #copyInvite{background:#344554!important;color:#edf0f2!important;border-color:#66727e!important}
-#inviteShare #sendTelegram{background:linear-gradient(120deg,#b58b4e,#d4b373)!important;color:#17212c!important}
+:root{color-scheme:dark;--bg:#101820;--surface:#192530;--border:#394652;--text:#e9edf0;--muted:#a2adb7;--gold:#c4a16c}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 system-ui}
+header{background:#182530;padding:26px 22px;border-bottom:1px solid var(--border)}
+header h1{font-size:27px;margin:0 0 6px;letter-spacing:.01em}header span{font-size:12px;color:var(--muted)}
+main{max-width:950px;margin:0 auto;padding:20px 18px 60px}
+#status{font-size:13px;color:var(--muted);margin:0 0 16px}#status:empty{display:none}
+#identity{padding:0 0 18px;font-size:14px;font-weight:600}
+section{background:transparent;border:0;border-top:1px solid var(--border);border-radius:0;padding:26px 0 30px;margin:0;box-shadow:none}
+h2{font-size:22px;font-weight:650;margin:0 0 22px}h3{font-size:18px;margin:30px 0 15px}
+nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0 0 24px;padding:0;background:transparent;border:0}
+button{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:11px 15px;border-radius:8px;border:1px solid #566470;background:#283845;color:var(--text);font:600 14px/1.3 system-ui;cursor:pointer;text-align:center;box-shadow:none}
+button:hover{background:#344654}button:disabled{opacity:.5}
+nav button{width:100%;background:#1b2935;border-color:#43515d;font-weight:550}
+nav button.on{color:var(--gold);border-color:var(--gold);background:#1b2935}
+nav #logout{grid-column:1/-1;background:transparent;color:var(--muted)}
+form{display:flex;flex-direction:column;max-width:640px;margin:0 0 12px}
+label{display:block;font-size:13px;font-weight:550;color:#d2d9df}
+input,select{display:block;width:100%;min-width:0;min-height:48px;margin:8px 0 20px;padding:11px 13px;background:#121e28;color:var(--text);border:1px solid #465460;border-radius:8px;font:inherit}
+input:focus,select:focus{outline:none;border-color:var(--gold)}
+form>button{width:100%;margin:4px 0 12px}
+#inviteForm{display:flex;flex-direction:column}
+#inviteResult{padding:7px 0 12px;color:var(--muted);font-size:13px;font-weight:450;overflow-wrap:anywhere}
+#inviteShare{display:flex;flex-direction:column;gap:14px;max-width:640px;padding:22px 0;margin:8px 0 24px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:transparent;border-radius:0}
+#inviteShare label{width:100%}#inviteShare input{margin:9px 0 0}
+#inviteShare button{width:100%;min-height:50px;margin:0;background:#283845;color:var(--text);border-color:#566470}
+#approvalList .item{display:grid;grid-template-columns:1fr 1fr;gap:12px}#approvalList .item span{grid-column:1/-1}#approvalList .item button{width:100%}
 #loadApprovals{margin-bottom:16px}
-#approvalList .item{gap:12px;padding:18px 0}
-#approvalList .item button{margin:0}
-#redeemForm{max-width:560px}
-#invite section+section{margin-top:24px}
-@media(max-width:620px){
-#inviteForm{grid-template-columns:1fr}
-#inviteForm>button{width:100%;min-width:0}
-#inviteShare{grid-template-columns:1fr;padding:18px!important;gap:12px}
-#inviteShare>label{grid-column:1}
-#inviteShare>button{width:100%}
-section{padding:20px!important}
-nav{gap:7px!important}
-nav button{flex:1 1 calc(50% - 7px)!important}
-}
-</style><style>
-:root{color-scheme:dark;--bg:#0c131c;--panel:#17232f;--panel2:#202e3b;--metal:#344554;--gold:#c8a260;--text:#edf0f2;--muted:#a5afba}
-html,body{background:var(--bg)!important;color:var(--text)!important}
-header{background:linear-gradient(120deg,#101922,#273746)!important;border-bottom:2px solid var(--gold)!important;color:var(--text)!important}
-main{background:transparent!important}
-section{background:linear-gradient(145deg,#1b2936,#141f2a)!important;color:var(--text)!important;border:1px solid #364350!important;box-shadow:0 12px 30px #0005!important}
-h1,h2,h3,label{color:var(--text)!important}
-nav{background:#111b25!important;border:1px solid #354350!important}
-nav button{background:transparent!important;color:#c5cdd4!important}
-nav button.on{background:#344554!important;color:#e8c486!important;border-bottom:2px solid var(--gold)!important}
-button{background:#344554!important;color:#f5f6f7!important;border:1px solid #556370!important}
-button:hover{background:#43586b!important}
-form button,#sendTelegram,#copyInvite{background:linear-gradient(120deg,#b58b4e,#d4b373)!important;color:#171d25!important;border:1px solid #e4c58b!important;font-weight:700!important}
-input,select,textarea{background:#0f1a25!important;color:#f3f5f7!important;border:1px solid #485969!important}
-input::placeholder{color:#98a3af!important}
-input:focus,select:focus{border-color:var(--gold)!important;outline:2px solid #c8a26044!important}
-#identity{background:#1c2a36!important;color:#e2e6eb!important;border:1px solid #455363!important;border-left:4px solid var(--gold)!important}
-#status{background:#222d38!important;color:#e5c990!important;border:1px solid #6c5a3d!important}
-.item{border-color:#3b4a58!important;color:#e6ebef!important}
-.muted{color:var(--muted)!important}
-#inviteShare{background:#1d2935!important;border:1px solid #655438!important}
-#inviteResult{color:#e0c38c!important}
-a{color:#d9b879!important}
+.item{padding:17px 0;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.item span{flex:1 1 180px}.item button{min-height:43px}
+.grid{display:flex;flex-direction:column}
+.hidden{display:none!important}.muted{color:var(--muted)}a{color:var(--gold)}
+#openPdf{width:100%;margin-top:8px}
+@media(min-width:750px){main{padding:28px 26px 60px}nav{grid-template-columns:repeat(5,minmax(0,1fr))}nav #logout{grid-column:auto}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}form>button{width:auto;align-self:flex-start;min-width:230px}#inviteShare{display:grid;grid-template-columns:1fr 1fr}#inviteShare label{grid-column:1/-1}}
 </style><header><h1>S-BUILD Control</h1><span>Робочий кабінет · хмарні об'єкти та звіти</span></header><main><p id="status" role="status">Підключення…</p><section id="auth"><h2>Вхід</h2><p class="muted">Увійдіть у вже створений обліковий запис. Перший директор створюється адміністратором системи.</p><form id="login"><label>Email<input id="email" type="email" required autocomplete="username"></label><label>Пароль<input id="password" type="password" required autocomplete="current-password"></label><button>Увійти</button></form><button type="button" id="signup">Створити обліковий запис працівника</button><p class="muted" id="joinHint"></p></section><div id="workspace" class="hidden"><div id="identity"></div><nav><button data-tab="projects" class="on">Об'єкти</button><button data-tab="reports">Звіти</button><button data-tab="invite">Запрошення</button><button data-tab="drawings">Креслення</button><button id="logout">Вийти</button></nav><section id="projects"><h2>Об'єкти</h2><form id="projectForm" class="hidden"><div class="grid"><label>Назва<input name="name" required maxlength="120"></label><label>Адреса<input name="address" maxlength="180"></label></div><button>Створити об'єкт</button></form><div id="projectList"></div></section><section id="reports" class="hidden"><h2>Звіти робіт</h2><form id="reportForm"><label>Об'єкт<select id="reportProject" required></select></label><label>Вид роботи<input name="description" required maxlength="150"></label><label>Одиниця<select name="unit"><option>м²</option><option>м.п.</option><option>м³</option><option>шт</option></select></label><label>Кількість<input name="quantity" type="number" min=".01" step=".01" required></label><button>Надіслати звіт на погодження</button></form><div id="reportList"></div></section><section id="invite" class="hidden"><h2>Запросити співробітника</h2><form id="inviteForm"><label>Роль<select name="role"><option value="worker">Працівник</option><option value="brigadier">Бригадир</option><option value="foreman">Виконроб</option><option value="accountant">Бухгалтер</option><option value="technical_director">Технічний директор</option><option value="commercial_director">Комерційний директор</option></select></label><label>Об'єкт<select id="inviteProject"><option value="">Без об'єкта</option></select></label><button>Згенерувати запрошення</button></form><div id="inviteResult"></div><div id="inviteShare" class="hidden"><label>Посилання для працівника<input id="inviteLink" readonly></label><button type="button" id="copyInvite">Скопіювати посилання</button> <button type="button" id="sendTelegram">Надіслати в Telegram</button></div><h3>Заявки на підключення</h3><button type="button" id="loadApprovals">Оновити заявки</button><div id="approvalList"></div><h3>Приєднатися за кодом</h3><form id="redeemForm"><label>Код<input name="code" required></label><label>Ім'я<input name="name" required></label><button>Надіслати заявку</button></form></section><section id="drawings" class="hidden"><h2>Креслення PDF</h2><p class="muted">Локальний перегляд сторінки; завантаження у хмарне сховище ще в розробці.</p><label>PDF<input id="pdf" type="file" accept="application/pdf"></label><label>Номер сторінки<input id="page" type="number" value="1" min="1"></label><button id="openPdf">Відкрити сторінку</button></section></div></main><script type="module">
 import {createClient} from "https://esm.sh/@supabase/supabase-js@2";
 const sb=createClient("https://nwwrxisppqarulclufaf.supabase.co","sb_publishable_80fQO1XELeLhANWkblFxtg_cGJ7N0-7");
-const $=id=>document.getElementById(id), status=s=>$("status").textContent=s;
+const $=id=>document.getElementById(id), status=s=>$("status").textContent=/^(Підключено до Supabase|Увійдіть для роботи)$/.test(s)?"":s;
 let user=null,profile=null,projects=[];const inviteToken=new URLSearchParams(location.hash.slice(1)).get("invite");if(inviteToken)$("joinHint").textContent="Ви отримали запрошення S-BUILD. Увійдіть або створіть обліковий запис, потім надішліть заявку на приєднання.";
 const err=e=>status("Помилка: "+(e?.message||String(e)));
-async function refresh(){const {data:{user:u}}=await sb.auth.getUser();user=u;$("auth").classList.toggle("hidden",!!u);$("workspace").classList.toggle("hidden",!u);if(!u){status("Увійдіть для роботи");return}const p=await sb.from("sbuild_profiles").select("full_name,role,active").eq("user_id",u.id).maybeSingle();profile=p.data;$("identity").textContent=profile?.active?profile.full_name+" · "+profile.role:"Обліковий запис очікує підтвердження адміністратором";$("projectForm").classList.toggle("hidden",profile?.role!=="owner");status("Підключено до Supabase");await loadProjects();await loadReports();if(inviteToken&&!profile?.active){document.querySelector('[data-tab="invite"]').click();$("redeemForm").querySelector('input[name="code"]').value=inviteToken;status("Запрошення отримано. Введіть ім’я та натисніть «Надіслати заявку»")}}
+async function refresh(){const {data:{user:u}}=await sb.auth.getUser();user=u;$("auth").classList.toggle("hidden",!!u);$("workspace").classList.toggle("hidden",!u);if(!u){status("Увійдіть для роботи");return}const p=await sb.from("sbuild_profiles").select("full_name,role,active").eq("user_id",u.id).maybeSingle();profile=p.data;$("identity").textContent=profile?.active?profile.full_name+" · "+({owner:"Директор",worker:"Працівник",brigadier:"Бригадир",foreman:"Виконроб",accountant:"Бухгалтер"}[profile.role]||profile.role):"Обліковий запис очікує підтвердження адміністратором";$("projectForm").classList.toggle("hidden",profile?.role!=="owner");status("Підключено до Supabase");await loadProjects();await loadReports();if(inviteToken&&!profile?.active){document.querySelector('[data-tab="invite"]').click();$("redeemForm").querySelector('input[name="code"]').value=inviteToken;status("Запрошення отримано. Введіть ім’я та натисніть «Надіслати заявку»")}}
 async function loadProjects(){const {data,error}=await sb.from("sbuild_projects").select("id,name,address,status").order("created_at",{ascending:false});if(error)return err(error);projects=data||[];$("projectList").replaceChildren(...projects.map(p=>{let d=document.createElement("div");d.className="item";d.textContent=p.name+" · "+(p.address||"Адресу не вказано")+" · "+p.status;if(profile?.role==="owner"){const b=document.createElement("button");b.type="button";b.textContent="Редагувати";b.onclick=async()=>{const name=prompt("Назва об’єкта",p.name);if(name===null)return;const address=prompt("Адреса об’єкта",p.address||"");if(address===null)return;const n=name.trim(),a=address.trim();if(!n||n.length>120||a.length>180)return err("Перевірте назву та адресу");const {error}=await sb.from("sbuild_projects").update({name:n,address:a}).eq("id",p.id);if(error)return err(error);status("Об’єкт оновлено");await loadProjects()};d.append(" ",b)}return d}));for(const id of ["reportProject","inviteProject"]){let s=$(id);s.querySelectorAll("option[data-project]").forEach(x=>x.remove());projects.forEach(p=>{let o=document.createElement("option");o.value=p.id;o.textContent=p.name;o.dataset.project="1";s.append(o)})}}
 async function loadReports(){const {data,error}=await sb.from("sbuild_work_reports").select("id,project_id,worker_id,description,quantity,unit,status,work_date").order("created_at",{ascending:false}).limit(50);if(error)return err(error);$("reportList").replaceChildren(...(data||[]).map(r=>{const d=document.createElement("div");d.className="item";const t=document.createElement("span");t.textContent=r.work_date+" · "+r.description+" · "+r.quantity+" "+r.unit+" · "+({submitted:"Подано на погодження",foreman_approved:"Погоджено виконробом",owner_approved:"Затверджено директором",returned:"Повернуто на виправлення"}[r.status]||r.status);d.append(t);const owner=profile?.role==="owner",manager=["owner","foreman","technical_director"].includes(profile?.role);if(manager&&r.status!=="owner_approved"){const edit=document.createElement("button");edit.textContent="Редагувати";edit.onclick=async()=>{const desc=prompt("Вид робіт",r.description);if(desc===null)return;const qty=prompt("Кількість",String(r.quantity));if(qty===null)return;const q=Number(qty.replace(",","."));if(!desc.trim()||!Number.isFinite(q)||q<=0)return err("Невірні дані");const {error}=await sb.from("sbuild_work_reports").update({description:desc.trim(),quantity:q,status:"submitted",foreman_approved_by:null,owner_approved_by:null}).eq("id",r.id);if(error)return err(error);await loadReports();status("Звіт виправлено")};d.append(" ",edit)}if(manager&&r.status==="submitted"){const b=document.createElement("button");b.textContent="Погодити виконробом";b.onclick=async()=>{const {error}=await sb.from("sbuild_work_reports").update({status:"foreman_approved",foreman_approved_by:user.id}).eq("id",r.id).eq("status","submitted");if(error)return err(error);await loadReports();status("Перший етап погоджено")};d.append(" ",b)}if(owner&&["submitted","foreman_approved"].includes(r.status)){const b=document.createElement("button");b.textContent="Затвердити директором";b.onclick=async()=>{if(!confirm("Остаточно затвердити звіт?"))return;const {error}=await sb.from("sbuild_work_reports").update({status:"owner_approved",owner_approved_by:user.id}).eq("id",r.id);if(error)return err(error);await loadReports();status("Звіт затверджено директором")};d.append(" ",b)}return d}))}
 $("login").onsubmit=async e=>{e.preventDefault();const {error}=await sb.auth.signInWithPassword({email:$("email").value,password:$("password").value});if(error)return err(error);await refresh()};
