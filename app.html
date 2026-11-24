@@ -25,6 +25,45 @@ nav button:hover{background:#344b61;color:#fff}
 .hidden{display:none!important}
 @media(max-width:600px){nav button{flex:1 1 42%;padding:10px 7px}main{padding:0 12px}header{padding:24px 20px}}
 </style><style>
+/* Mobile-first layout refinement, final overrides */
+html{-webkit-text-size-adjust:100%}
+body{font-size:15px!important;line-height:1.55!important}
+header{padding:24px 20px!important}
+header h1{font-size:27px!important;line-height:1.18!important;margin-bottom:10px!important}
+header span{display:block;font-size:12px!important;line-height:1.5!important}
+main{width:100%;max-width:1000px;margin:18px auto!important;padding:0 14px!important}
+section{padding:22px!important;margin:0 0 18px!important;border-radius:14px!important}
+#identity{margin-bottom:14px!important;padding:13px 16px!important;line-height:1.5!important}
+#status{margin:0 0 18px!important;padding:12px 15px!important}
+nav{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important;margin:0 0 18px!important;padding:12px!important}
+nav button{display:block!important;width:100%!important;min-width:0!important;min-height:48px!important;padding:10px 8px!important;font-size:14px!important;text-align:center!important;line-height:1.3!important}
+nav #logout{grid-column:1/-1!important;background:#263442!important;border-color:#4c5966!important}
+h2{font-size:23px!important;line-height:1.3!important;margin:0 0 23px!important}
+h3{font-size:19px!important;line-height:1.35!important;margin:30px 0 15px!important}
+form{display:flex!important;flex-direction:column!important;gap:0!important;width:100%!important}
+form>label{display:block!important;width:100%!important;margin:0 0 5px!important;line-height:1.45!important}
+label{display:block!important;font-size:14px!important;font-weight:600!important}
+label>input,label>select{display:block!important;width:100%!important;min-width:0!important;max-width:100%!important;box-sizing:border-box!important;margin:8px 0 16px!important}
+form>button{display:block!important;width:100%!important;min-width:0!important;max-width:100%!important;margin:5px 0 8px!important;padding:14px 16px!important;min-height:50px!important;font-size:14px!important;border-radius:10px!important}
+#inviteForm{display:flex!important;flex-direction:column!important;align-items:stretch!important}
+#inviteForm>button{grid-column:auto!important;justify-self:auto!important}
+#inviteShare{display:flex!important;flex-direction:column!important;gap:13px!important;padding:19px!important;margin:20px 0 30px!important}
+#inviteShare>label{display:block!important;width:100%!important}
+#inviteShare input{display:block!important;width:100%!important;min-width:0!important;margin:9px 0 3px!important;font-size:13px!important}
+#inviteShare>button{display:block!important;width:100%!important;min-height:52px!important;padding:13px 14px!important;margin:0!important;font-size:14px!important;line-height:1.35!important;border-radius:10px!important}
+#inviteResult{font-size:14px!important;overflow-wrap:anywhere!important;padding:15px 0!important;line-height:1.65!important}
+#projectForm .grid{display:flex!important;flex-direction:column!important;gap:0!important}
+#projectForm .grid>label{display:block!important;width:100%!important}
+#projectForm .grid input{display:block!important;width:100%!important}
+#projectList .item,#reportList .item{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:12px!important;padding:18px 0!important}
+#projectList .item button,#reportList .item button{align-self:stretch!important;min-height:44px!important}
+#approvalList .item{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important}
+#approvalList .item span{grid-column:1/-1!important}
+#approvalList .item button{width:100%!important}
+#drawings input[type=file]{padding:12px!important;min-height:52px!important}
+#openPdf{display:block!important;width:100%!important;min-height:48px!important;margin-top:8px!important}
+@media(min-width:750px){main{padding:0 24px!important}nav{grid-template-columns:repeat(5,minmax(0,1fr))!important}nav #logout{grid-column:auto!important}#inviteForm{max-width:580px!important}#inviteShare{max-width:640px!important}form>button{width:auto!important;align-self:flex-start!important;min-width:220px!important}#inviteShare>button{width:100%!important}}
+</style><style>
 /* S-BUILD: precise, consistent spacing and visual hierarchy */
 :root{--space-1:6px;--space-2:12px;--space-3:18px;--space-4:24px;--space-5:32px}
 body{letter-spacing:.005em}
