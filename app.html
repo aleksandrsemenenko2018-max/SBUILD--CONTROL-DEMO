@@ -748,5 +748,47 @@ function sbuildCompactDepartmentNavigation(){
 }
 sbuildCompactDepartmentNavigation();
 
+/* v40: compact, one-open-at-a-time project communications and nested forms */
+(function(){
+ const root=document.getElementById("sbuildComms");
+ if(!root||root.dataset.compactV40)return;
+ root.dataset.compactV40="1";
+ const wrap=(node,label)=>{
+  if(!node||node.closest("details.sbuild-comms-fold"))return null;
+  const d=document.createElement("details");d.className="sbuild-comms-fold";
+  const summary=document.createElement("summary");summary.textContent=label;
+  node.before(d);d.append(summary,node);return d;
+ };
+ const contacts=wrap(document.getElementById("sbuildContactForm"),"＋ Додати контакт");
+ const questions=wrap(document.getElementById("sbuildQuestionForm"),"＋ Нове питання");
+ const list=wrap(document.getElementById("sbuildContactList"),"Контакти об’єктів");
+ const archive=wrap(document.getElementById("sbuildQuestionList"),"Питання та відповіді");
+ const bot=wrap(document.getElementById("sbuildBotSetup"),"Налаштування Telegram");
+ const folds=[contacts,questions,list,archive,bot].filter(Boolean);
+ folds.forEach(d=>d.addEventListener("toggle",()=>{if(d.open)folds.forEach(other=>{if(other!==d)other.open=false})}));
+ const project=document.getElementById("projects");
+ if(project){
+  const observer=new MutationObserver(()=>{if(project.classList.contains("hidden"))folds.forEach(d=>d.open=false)});
+  observer.observe(project,{attributes:true,attributeFilter:["class"]});
+ }
+ const css=document.createElement("style");css.textContent=`
+ #sbuildComms{margin-top:16px}
+ #sbuildComms>h3{margin:8px 0}
+ #sbuildComms>p{font-size:13px;margin:0 0 10px;color:#aebbc6}
+ .sbuild-comms-fold,.sbuild-department-fold{border:1px solid #435767;border-radius:12px;margin:8px 0;background:#152635;overflow:hidden}
+ .sbuild-comms-fold>summary,.sbuild-department-fold>summary{cursor:pointer;padding:12px 14px;font-size:14px;font-weight:600;list-style:none;display:flex;align-items:center;justify-content:space-between}
+ .sbuild-comms-fold>summary::-webkit-details-marker,.sbuild-department-fold>summary::-webkit-details-marker{display:none}
+ .sbuild-comms-fold>summary:after,.sbuild-department-fold>summary:after{content:"⌄";color:#d9b579;font-size:18px}
+ .sbuild-comms-fold[open]>summary:after,.sbuild-department-fold[open]>summary:after{content:"⌃"}
+ .sbuild-comms-fold>form,.sbuild-comms-fold>div:not(:first-child){padding:10px 12px;margin:0;max-width:none}
+ .sbuild-comms-fold form input,.sbuild-comms-fold form select,.sbuild-comms-fold form textarea{min-height:40px;margin:4px 0 9px}
+ .sbuild-comms-fold form button{min-height:40px}
+ .sbuild-project-picker{display:flex;flex-wrap:wrap;gap:5px}
+ .sbuild-project-picker button{min-height:34px;padding:6px 9px;font-size:12px!important}
+ @media(max-width:600px){#workspace>section:not(#dashboard){padding:15px 11px}.sbuild-comms-fold>summary{padding:11px}}
+ `;document.head.append(css);
+})();
+
+
 refresh().catch(err);
 </script></html>
