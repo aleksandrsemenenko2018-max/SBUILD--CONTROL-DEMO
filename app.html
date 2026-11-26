@@ -748,13 +748,40 @@ function sbuildCompactDepartmentNavigation(){
 }
 sbuildCompactDepartmentNavigation();
 
+/* v41: accordion navigation, close inactive projects and prevent duplicate empty folds */
+(function(){
+ const panel=document.getElementById("sbuildObjectPanel");
+ const projectsSection=document.getElementById("projects");
+ if(panel){
+  panel.addEventListener("toggle",e=>{
+   const opened=e.target;
+   if(!(opened instanceof HTMLDetailsElement)||!opened.open||!opened.classList.contains("sbuild-nav-sub"))return;
+   const parent=opened.parentElement;
+   for(const sibling of parent.children)if(sibling!==opened&&sibling instanceof HTMLDetailsElement&&sibling.classList.contains("sbuild-nav-sub"))sibling.open=false;
+  },true);
+ }
+ if(projectsSection){
+  new MutationObserver(()=>{
+   if(!projectsSection.classList.contains("hidden"))return;
+   if(panel){panel.hidden=true;panel.querySelectorAll("details").forEach(d=>d.open=false)}
+   if(typeof sbuildSelectedProject!=="undefined"){sbuildSelectedProject=null;if(typeof sbuildRenderProjectNav==="function")sbuildRenderProjectNav()}
+  }).observe(projectsSection,{attributes:true,attributeFilter:["class"]});
+ }
+ document.querySelectorAll(".sbuild-department-fold").forEach(d=>{
+  d.addEventListener("toggle",()=>{
+   if(!d.open)return;
+   for(const other of d.parentElement.querySelectorAll(":scope > .sbuild-department-fold"))if(other!==d)other.open=false;
+  });
+ });
+})();
+
 /* v40: compact, one-open-at-a-time project communications and nested forms */
 (function(){
  const root=document.getElementById("sbuildComms");
  if(!root||root.dataset.compactV40)return;
  root.dataset.compactV40="1";
  const wrap=(node,label)=>{
-  if(!node||node.closest("details.sbuild-comms-fold"))return null;
+  if(!node||node.parentElement!==root||node.closest("details.sbuild-comms-fold"))return null;
   const d=document.createElement("details");d.className="sbuild-comms-fold";
   const summary=document.createElement("summary");summary.textContent=label;
   node.before(d);d.append(summary,node);return d;
