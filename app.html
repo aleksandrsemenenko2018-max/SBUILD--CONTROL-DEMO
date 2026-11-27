@@ -948,8 +948,7 @@ async function load(){
  const requests=e("matRequests");requests.replaceChildren();
  for(const q of r.data||[]){const line=document.createElement("div");line.className="item";const span=document.createElement("span");span.textContent=q.material_name+" · "+q.quantity+" "+q.unit+" · "+q.work_type+" · "+q.status;line.append(span);
  if(["owner","foreman","technical_director"].includes(profile?.role)&&["requested","approved","ordered"].includes(q.status)){const next={requested:"approved",approved:"ordered",ordered:"delivered"}[q.status];const b=document.createElement("button");b.textContent=next;b.onclick=async()=>{const x=await sb.from("sbuild_material_requests").update({status:next}).eq("id",q.id);m.textContent=x.error?.message||"Оновлено";if(!x.error)load()};line.append(b)}requests.append(line)}
- const balances=new Map();for(const x of inv.data||[]){const key=x.material_name.toLowerCase()+"|"+x.unit;const v=balances.get(key)||{name:x.material_name,unit:x.unit,qty:0};v.qty+=Number(x.quantity);balances.set(key,v)}
- e("matStock").textContent=[...balances.values()].map(x=>x.name+" · "+x.qty+" "+x.unit).join("\n")||"Склад порожній";
+ e("matStock").textContent=(bal.data||[]).map(x=>x.material_name+" · "+x.quantity+" "+x.unit).join("\n")||"Склад порожній";
  e("matHistory").textContent=(inv.data||[]).slice(0,30).map(x=>x.created_at.slice(0,10)+" · "+x.kind+" · "+x.material_name+" · "+x.quantity+" "+x.unit).join("\n");
  e("matExpenses").textContent="Разом: "+Number(tot.data?.amount||0).toFixed(2)+" грн\n"+(ex.data||[]).slice(0,30).map(x=>x.incurred_on+" · "+x.description+" · "+x.amount+" грн").join("\n");
 }
