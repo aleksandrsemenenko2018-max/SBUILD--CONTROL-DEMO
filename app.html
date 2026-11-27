@@ -935,13 +935,15 @@ const fill=(id,rows,placeholder)=>{const x=e(id),old=x.value;x.replaceChildren()
 async function load(){
  if(!user||!projects.length)return;
  fill("matProject",projects);const pid=e("matProject").value;
- const [z,r,inv,ex]=await Promise.all([
+ const [z,r,inv,ex,bal,tot]=await Promise.all([
  sb.from("sbuild_zones").select("id,name").eq("project_id",pid),
  sb.from("sbuild_material_requests").select("id,material_name,quantity,unit,work_type,status").eq("project_id",pid).order("created_at",{ascending:false}).limit(100),
  sb.from("sbuild_inventory_movements").select("material_name,unit,quantity,kind,created_at").eq("project_id",pid).order("created_at",{ascending:false}).limit(1000),
- sb.from("sbuild_expenses").select("description,amount,incurred_on").eq("project_id",pid).order("incurred_on",{ascending:false}).limit(300)
+ sb.from("sbuild_expenses").select("description,amount,incurred_on").eq("project_id",pid).order("incurred_on",{ascending:false}).limit(300),
+ sb.from("sbuild_inventory_balances").select("material_name,unit,quantity").eq("project_id",pid),
+ sb.from("sbuild_project_expense_totals").select("amount").eq("project_id",pid).maybeSingle()
  ]);
- const bad=[z,r,inv,ex].find(v=>v.error);if(bad){m.textContent=bad.error.message;return}
+ const bad=[z,r,inv,ex,bal,tot].find(v=>v.error);if(bad){m.textContent=bad.error.message;return}
  fill("matZone",z.data||[],"Оберіть зону");fill("matDest",projects.filter(p=>p.id!==pid),"Інший об'єкт");
  const requests=e("matRequests");requests.replaceChildren();
  for(const q of r.data||[]){const line=document.createElement("div");line.className="item";const span=document.createElement("span");span.textContent=q.material_name+" · "+q.quantity+" "+q.unit+" · "+q.work_type+" · "+q.status;line.append(span);
@@ -949,7 +951,7 @@ async function load(){
  const balances=new Map();for(const x of inv.data||[]){const key=x.material_name.toLowerCase()+"|"+x.unit;const v=balances.get(key)||{name:x.material_name,unit:x.unit,qty:0};v.qty+=Number(x.quantity);balances.set(key,v)}
  e("matStock").textContent=[...balances.values()].map(x=>x.name+" · "+x.qty+" "+x.unit).join("\n")||"Склад порожній";
  e("matHistory").textContent=(inv.data||[]).slice(0,30).map(x=>x.created_at.slice(0,10)+" · "+x.kind+" · "+x.material_name+" · "+x.quantity+" "+x.unit).join("\n");
- e("matExpenses").textContent="Разом: "+(ex.data||[]).reduce((n,x)=>n+Number(x.amount),0).toFixed(2)+" грн\n"+(ex.data||[]).slice(0,30).map(x=>x.incurred_on+" · "+x.description+" · "+x.amount+" грн").join("\n");
+ e("matExpenses").textContent="Разом: "+Number(tot.data?.amount||0).toFixed(2)+" грн\n"+(ex.data||[]).slice(0,30).map(x=>x.incurred_on+" · "+x.description+" · "+x.amount+" грн").join("\n");
 }
 e("matProject").onchange=()=>load().catch(x=>m.textContent=x.message);
 e("matReload").onclick=()=>load().catch(x=>m.textContent=x.message);
