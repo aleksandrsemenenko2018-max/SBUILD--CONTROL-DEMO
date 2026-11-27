@@ -797,6 +797,17 @@ sbuildCompactDepartmentNavigation();
  const bot=wrap(document.getElementById("sbuildBotSetup"),"Налаштування Telegram");
  const folds=[contacts,questions,list,archive,bot].filter(Boolean);
  folds.forEach(d=>d.addEventListener("toggle",()=>{if(d.open)folds.forEach(other=>{if(other!==d)other.open=false})}));
+ // Keyboard navigation: Escape closes the active subsection without losing the project context.
+ root.addEventListener("keydown",event=>{
+  if(event.key!=="Escape")return;
+  const active=event.target.closest("details.sbuild-comms-fold");
+  if(active&&active.open){
+   active.open=false;
+   active.querySelector("summary")?.focus();
+   event.preventDefault();
+  }
+ });
+
  const project=document.getElementById("projects");
  if(project){
   const observer=new MutationObserver(()=>{if(project.classList.contains("hidden"))folds.forEach(d=>d.open=false)});
