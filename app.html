@@ -939,7 +939,7 @@ async function load(){
  sb.from("sbuild_zones").select("id,name").eq("project_id",pid),
  sb.from("sbuild_material_requests").select("id,material_name,quantity,unit,work_type,status,zone_id").eq("project_id",pid).order("created_at",{ascending:false}).limit(100),
  sb.from("sbuild_inventory_movements").select("material_name,unit,quantity,kind,created_at").eq("project_id",pid).order("created_at",{ascending:false}).limit(1000),
- sb.from("sbuild_expenses").select("description,amount,incurred_on").eq("project_id",pid).order("incurred_on",{ascending:false}).limit(300),
+ sb.from("sbuild_expenses").select("description,amount,incurred_on,receipt_path").eq("project_id",pid).order("incurred_on",{ascending:false}).limit(300),
  sb.from("sbuild_inventory_balances").select("material_name,unit,quantity").eq("project_id",pid),
  sb.from("sbuild_project_expense_totals").select("amount").eq("project_id",pid).maybeSingle(),
  sb.from("sbuild_material_budgets").select("budget_amount").eq("project_id",pid).maybeSingle()
@@ -955,7 +955,11 @@ async function load(){
  const actual=Number(tot.data?.amount||0),limit=budget.data?.budget_amount;
  e("matBudgetStatus").textContent=budget.error?"Бюджет недоступний":limit==null?"Ліміт витрат не встановлено":"Ліміт: "+Number(limit).toFixed(2)+" грн · Факт: "+actual.toFixed(2)+" грн · "+(actual>Number(limit)?"ПЕРЕВИТРАТА "+(actual-Number(limit)).toFixed(2)+" грн":"Залишок "+(Number(limit)-actual).toFixed(2)+" грн");
  e("matBudgetStatus").style.color=limit!=null&&actual>Number(limit)?"#ff9d8c":"";
- e("matExpenses").textContent="Разом: "+Number(tot.data?.amount||0).toFixed(2)+" грн\n"+(ex.data||[]).slice(0,30).map(x=>x.incurred_on+" · "+x.description+" · "+x.amount+" грн").join("\n");
+ e("matExpenses").replaceChildren();
+ const summary=document.createElement("p");summary.textContent="Разом: "+Number(tot.data?.amount||0).toFixed(2)+" грн";e("matExpenses").append(summary);
+ for(const row of (ex.data||[]).slice(0,50)){const item=document.createElement("div");item.className="item";const t=document.createElement("span");t.textContent=row.incurred_on+" · "+row.description+" · "+row.amount+" грн";item.append(t);
+ if(row.receipt_path){const b=document.createElement("button");b.type="button";b.textContent="Чек";b.onclick=async()=>{if(row.receipt_path.startsWith("http")){window.open(row.receipt_path,"_blank","noopener,noreferrer");return}const x=await sb.storage.from("sbuild-receipts").createSignedUrl(row.receipt_path,120);if(x.error)m.textContent=x.error.message;else window.open(x.data.signedUrl,"_blank","noopener,noreferrer")};item.append(b)}
+ e("matExpenses").append(item)}
 }
 
 async function uploadReceipt(file,project){
