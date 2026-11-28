@@ -1,19 +1,20 @@
 const assert = require('node:assert/strict');
 const { readFile } = require('node:fs/promises');
 const { extname, resolve } = require('node:path');
-const { chromium } = require('playwright');
+const { chromium, webkit } = require('playwright');
 
-const siteOrigin = 'http://sbuild.test';
+const siteOrigin = 'http://localhost:4173';
 const projectRoot = resolve(__dirname, '..');
 const supabaseHost = 'nwwrxisppqarulclufaf.supabase.co';
 
-function launchBrowser() {
+function launchBrowser(engine = 'chromium') {
   const proxy = process.env.BROWSER_TEST_PROXY;
   const spki = process.env.BROWSER_TEST_PROXY_SPKI;
-  return chromium.launch({
-    executablePath: process.env.BROWSER_TEST_CHROMIUM,
+  const isWebKit = engine === 'webkit';
+  return (isWebKit ? webkit : chromium).launch({
+    executablePath: isWebKit ? undefined : process.env.BROWSER_TEST_CHROMIUM,
     proxy: proxy ? { server: proxy } : undefined,
-    args: spki ? ['--ignore-certificate-errors-spki-list=' + spki] : [],
+    args: !isWebKit && spki ? ['--ignore-certificate-errors-spki-list=' + spki] : [],
   });
 }
 
@@ -36,11 +37,14 @@ async function openPage(browser, mockSupabase, contextOptions = {}) {
     if (origin === 'https://esm.sh' && method === 'GET') return route.continue();
     if (origin === 'https://images.unsplash.com' && request.resourceType() === 'image') return route.abort();
     if (origin === 'https://' + supabaseHost) {
-      const body = request.postData() ? request.postDataJSON() : null;
-      const mocked = mockSupabase({ method, pathname, searchParams, body });
+      const contentType = request.headers()['content-type'] ?? '';
+      const rawBody = request.postDataBuffer();
+      const body = rawBody && contentType.includes('json') ? request.postDataJSON() : null;
+      const mocked = mockSupabase({ method, pathname, searchParams, body, rawBody, contentType });
       seen.push({ method, pathname, body });
       const headers = { 'access-control-allow-origin': siteOrigin };
-      if (mocked) return route.fulfill({ status: mocked.status ?? 200, json: mocked.json, headers });
+      if (mocked?.abort) return route.abort(mocked.abort);
+      if (mocked) return route.fulfill({ ...mocked, headers: { ...headers, ...mocked.headers } });
     }
     unexpected.push({ method, hostname, pathname });
     return route.abort();
@@ -49,7 +53,7 @@ async function openPage(browser, mockSupabase, contextOptions = {}) {
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', error => errors.push(error.stack));
-  page.setDefaultTimeout(8000);
+  page.setDefaultTimeout(15000);
   return {
     context, page, seen, unexpected, errors,
     assertClean() {

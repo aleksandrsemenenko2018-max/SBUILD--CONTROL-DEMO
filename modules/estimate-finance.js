@@ -26,3 +26,29 @@ export function plasterConsumption(area,thicknessMm,kgPerMmM2,bagKg,wastePercent
  const kg=number(area)*number(thicknessMm)*number(kgPerMmM2)*(1+number(wastePercent)/100);
  return {kg,bags:Math.ceil(kg/bag)};
 }
+
+export function summarizeProjectFinance(approvedWork, expenseTotal, payoutRecords) {
+ const safeMoney=value=>Number.isFinite(value)?money(value):null;
+ const approved=approvedWork?.filter(row=>row.status==="owner_approved");
+ function totalRate(rateKey) {
+  if(!approved)return null;
+  try {
+   return safeMoney(approved.reduce((total,row)=>total+money(number(row.quantity)*number(row[rateKey])),0));
+  } catch {
+   return null;
+  }
+ }
+ function payoutTotal(status) {
+  if(!payoutRecords)return null;
+  try {
+   return safeMoney(payoutRecords.filter(row=>row.status===status).reduce((total,row)=>total+number(row.amount),0));
+  } catch {
+   return null;
+  }
+ }
+ const revenue=totalRate("client_rate"),laborCost=totalRate("worker_rate");
+ let expenseCost=null;
+ try { expenseCost=safeMoney(number(expenseTotal)); } catch {}
+ const margin=[revenue,laborCost,expenseCost].some(value=>value===null)?null:safeMoney(revenue-laborCost-expenseCost);
+ return {revenue,laborCost,expenseCost,margin,paid:payoutTotal("paid"),planned:payoutTotal("planned")};
+}

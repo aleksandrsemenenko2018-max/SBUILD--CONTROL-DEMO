@@ -1,0 +1,77 @@
+name: Codex issue dispatch
+run-name: 'Codex queue issue #${{ inputs.issue_number }}'
+
+on:
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: Open issue with the codex-approved label
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: sbuild-codex-issue-dispatch
+  cancel-in-progress: false
+
+jobs:
+  admission:
+    if: github.repository == 'aleksandrsemenenko2018-max/SBUILD--CONTROL-DEMO' && github.ref == 'refs/heads/work' && github.actor == github.repository_owner && github.triggering_actor == github.repository_owner
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+      issues: read
+    outputs:
+      task_path: ${{ steps.admit.outputs.task_path }}
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Authorize issue and reserve dispatch
+        id: admit
+        run: node .github/codex/admit.mjs
+        env:
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Run local checks
+        run: npm run test:unit
+
+  codex:
+    needs: admission
+    if: needs.admission.outputs.task_path != '' && vars.SBUILD_CODEX_ENABLED == 'true' && vars.SBUILD_CODEX_APPROVED_SHA == github.sha
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: sbuild-codex
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Require a configured Codex project key
+        run: test -n "$SBUILD_CODEX_API_KEY"
+        env:
+          SBUILD_CODEX_API_KEY: ${{ secrets.SBUILD_CODEX_API_KEY }}
+      - name: Run Codex against the reviewed task
+        uses: openai/codex-action@306c6a196a99dcc6582530c396a19d2672d5e9ec # v1.14
+        timeout-minutes: 5
+        with:
+          openai-api-key: ${{ secrets.SBUILD_CODEX_API_KEY }}
+          prompt-file: ${{ needs.admission.outputs.task_path }}
+          codex-version: 0.172.0
+          sandbox: read-only
+          safety-strategy: drop-sudo
+          codex-args: '["--ephemeral"]'
+          output-file: codex-result.md
+      - name: Retain the reviewed task result
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: codex-result
+          path: codex-result.md
+          if-no-files-found: error
+          retention-days: 7

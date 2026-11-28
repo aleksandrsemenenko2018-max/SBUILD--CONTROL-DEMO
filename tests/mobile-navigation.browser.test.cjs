@@ -1,5 +1,6 @@
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
+const { devices } = require('playwright');
 const { launchBrowser, openPage, siteOrigin } = require('./browser-fixture.cjs');
 
 const email = 'mobile-navigation@example.invalid';
@@ -24,7 +25,7 @@ const contacts = projects.map(project => ({
   project_id: project.id,
   role: 'designer',
   name: `Дизайнер об’єкта ${project.id}`,
-  telegram_chat_id: `mock-chat-${project.id}`,
+  telegram_connected: true,
 }));
 const questions = projects.map(project => ({
   id: `question-${project.id}`,
@@ -57,7 +58,7 @@ function mockSupabase({ method, pathname, searchParams, body }) {
       return { json: [{ user_id: user.id, full_name: 'Тестовий власник', role: 'owner', active: true }] };
     case '/rest/v1/sbuild_projects':
       return { json: projects };
-    case '/rest/v1/sbuild_project_contacts':
+    case '/rest/v1/rpc/sbuild_list_project_contacts':
       return { json: contacts };
     case '/rest/v1/sbuild_questions':
       return { json: questions };
@@ -75,15 +76,11 @@ async function openProjects(page) {
   await page.locator('[data-tab="projects"]:visible').first().click();
 }
 
-test('mobile project navigation isolates contacts and questions across 15 projects', async () => {
-  const browser = await launchBrowser();
+for (const device of ['Pixel 7', 'iPhone 13']) {
+test(`${device} project navigation isolates contacts and questions across 15 projects`, async () => {
+  const browser = await launchBrowser(device === 'iPhone 13' && process.env.BROWSER_TEST_WEBKIT === '1' ? 'webkit' : 'chromium');
   try {
-    const { context, page, assertClean } = await openPage(browser, mockSupabase, {
-      viewport: { width: 390, height: 844 },
-      screen: { width: 390, height: 844 },
-      isMobile: true,
-      hasTouch: true,
-    });
+    const { context, page, assertClean } = await openPage(browser, mockSupabase, devices[device]);
     try {
       await openProjects(page);
 
@@ -142,6 +139,8 @@ test('mobile project navigation isolates contacts and questions across 15 projec
     await browser.close();
   }
 });
+
+}
 
 test('mock Telegram reply moves a sent question into the archive without a resend action', async () => {
   const question = { ...questions[0], status: 'draft' };
@@ -212,3 +211,208 @@ test('mock Telegram reply moves a sent question into the archive without a resen
     await browser.close();
   }
 });
+
+test('Telegram retry distinguishes a refused request from ambiguous network delivery', async () => {
+  const question = { ...questions[0], status: 'draft' };
+  let sendCount = 0;
+  let statusChecks = 0;
+  let loadCount = 0;
+  let loadedInitialQuestions = false;
+  const browser = await launchBrowser();
+  try {
+    const { context, page, assertClean } = await openPage(browser, request => {
+      const { method, pathname, searchParams, body } = request;
+      if (method === 'POST' && pathname === '/functions/v1/sbuild-telegram' &&
+          searchParams.get('action') === 'send' && body?.question_id === question.id) {
+        sendCount += 1;
+        if (sendCount === 1) return { status: 403, json: { error: 'Owner authorization required' } };
+        return { abort: 'connectionreset' };
+      }
+      if (method === 'GET' && pathname === '/rest/v1/sbuild_questions') {
+        if (searchParams.get('id') === `eq.${question.id}`) {
+          statusChecks += 1;
+          if (statusChecks === 1) return { status: 400, json: { message: 'Unavailable' } };
+          return { json: [{ id: question.id, status: question.status }] };
+        }
+        loadCount += 1;
+        if (!loadedInitialQuestions) return { status: 400, json: { message: 'Unavailable' } };
+        return { json: [question] };
+      }
+      return mockSupabase(request);
+    });
+    try {
+      await openProjects(page);
+      const retryList = page.getByRole('button', { name: 'Оновити контакти та звернення' });
+      await retryList.waitFor();
+      assert.equal(loadCount, 1);
+      loadedInitialQuestions = true;
+      await retryList.click();
+      await retryList.waitFor({ state: 'hidden' });
+      assert.equal(loadCount, 2);
+
+      await page.locator('#sbuildObjectNav .sbuild-object-tile').first().click();
+      await page.locator('#sbuildObjectPanel').getByText('Питання та погодження', { exact: true }).click();
+      const list = page.locator('#sbuildQuestionList');
+      await list.getByRole('button', { name: 'Надіслати в Telegram' }).click();
+      const sendAgain = list.getByRole('button', { name: 'Повторити відправлення' });
+      await sendAgain.click();
+      const check = list.getByRole('button', { name: 'Перевірити стан відправлення' });
+      await check.click();
+      await list.getByText('Не вдалося перевірити стан.', { exact: false }).waitFor();
+      await check.click();
+      await list.getByText('Доставку поки не підтверджено.', { exact: false }).waitFor();
+      assert.equal(await sendAgain.count(), 0);
+
+      question.status = 'sent';
+      await check.click();
+      await list.getByText('Очікує відповіді', { exact: true }).waitFor();
+      assert.equal(await check.count(), 0);
+      assert.equal(sendCount, 2);
+      assert.equal(statusChecks, 3);
+      assertClean();
+    } finally {
+      await context.close();
+    }
+  } finally {
+    await browser.close();
+  }
+});
+
+test('mobile attachments resume failed uploads without duplicating a draft or photo', async () => {
+  const browser = await launchBrowser();
+  const savedDrafts = new Map();
+  const savedMessages = new Map();
+  const uploadedObjects = new Set();
+  const uploads = [];
+  let draftWrites = 0;
+  let failedPdf = false;
+
+  try {
+    const { context, page, assertClean } = await openPage(browser, request => {
+      const { method, pathname, searchParams, body, rawBody } = request;
+      if (pathname === '/rest/v1/sbuild_questions') {
+        if (method === 'GET') return { json: [...savedDrafts.values()] };
+        if (method === 'POST' && searchParams.get('on_conflict') === 'id') {
+          draftWrites += 1;
+          savedDrafts.set(body.id, body);
+          if (draftWrites === 1) return { abort: 'connectionreset' };
+          return { status: 201, json: [] };
+        }
+      }
+      if (pathname === '/rest/v1/sbuild_question_messages') {
+        if (method === 'GET') return { json: [...savedMessages.values()] };
+        if (method === 'POST' && searchParams.get('on_conflict') === 'id') {
+          assert.ok(savedDrafts.has(body.question_id));
+          assert.ok(uploadedObjects.has('/storage/v1/object/sbuild-question-media/' + body.media_path));
+          savedMessages.set(body.id, body);
+          return { status: 201, json: [] };
+        }
+      }
+      if (method === 'GET' && pathname.startsWith('/storage/v1/object/info/sbuild-question-media/')) {
+        const objectPath = pathname.replace('/object/info/', '/object/');
+        return { status: uploadedObjects.has(objectPath) ? 200 : 404, json: {} };
+      }
+      if (pathname.startsWith('/storage/v1/object/sbuild-question-media/')) {
+        if (method === 'POST' && rawBody?.length > 0) {
+          uploads.push(pathname);
+          if (pathname.endsWith('plan.pdf') && !failedPdf) {
+            failedPdf = true;
+            return { status: 400, json: { error: 'Unavailable' } };
+          }
+          uploadedObjects.add(pathname);
+          return { json: { Key: pathname } };
+        }
+      }
+      if (method === 'POST' && pathname.startsWith('/storage/v1/object/sign/sbuild-question-media/')) {
+        return { json: { signedURL: '/object/sign/sbuild-question-media/mock/?token=mock' } };
+      }
+      return mockSupabase(request);
+    }, devices['Pixel 7']);
+
+    try {
+      await openProjects(page);
+      await page.locator('#sbuildObjectNav .sbuild-object-tile').first().tap();
+      const panel = page.locator('#sbuildObjectPanel');
+      await panel.getByText('Питання та погодження', { exact: true }).tap();
+      await panel.getByText('＋ Нове звернення', { exact: true }).tap();
+      const form = page.locator('#sbuildQuestionForm');
+      const description = 'Відновлення завантаження креслення';
+      await form.locator('textarea').fill(description);
+      const media = form.locator('input[type=file]');
+      await media.setInputFiles({ name: 'wrong.txt', mimeType: 'text/plain', buffer: Buffer.from('invalid') });
+      await form.getByRole('button', { name: 'Зберегти звернення' }).tap();
+      await page.locator('#status').getByText(/Вкладення має бути фото/).waitFor();
+      assert.equal(savedDrafts.size, 0);
+
+      await media.setInputFiles([
+        { name: 'photo.jpg', mimeType: 'image/jpeg', buffer: Buffer.from([255, 216, 255, 217]) },
+        { name: 'plan.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\n%%EOF') },
+      ]);
+      await form.getByRole('button', { name: 'Зберегти звернення' }).tap();
+      await page.locator('#status').getByText(/Не вдалося підтвердити збереження/).waitFor();
+      assert.equal(savedDrafts.size, 1);
+      assert.equal(uploads.length, 0);
+
+      const retry = form.getByRole('button', { name: 'Повторити збереження звернення' });
+      await retry.tap();
+      await page.locator('#status').getByText(/Не всі вкладення додано/).waitFor();
+      assert.equal(savedMessages.size, 1);
+      await retry.tap();
+      await page.locator('#status').getByText(/Звернення створено/).waitFor();
+
+      const list = page.locator('#sbuildQuestionList');
+      await list.getByText(description, { exact: true }).waitFor();
+      await list.getByText('Деталі та вкладення', { exact: true }).tap();
+      await list.getByText(/photo\.jpg/).waitFor();
+      await list.getByText(/plan\.pdf/).waitFor();
+      assert.equal(draftWrites, 2);
+      assert.equal(savedDrafts.size, 1);
+      assert.equal(savedMessages.size, 2);
+      assert.equal(uploads.filter(upload => upload.endsWith('photo.jpg')).length, 1);
+      const pdfAttempts = uploads.filter(upload => upload.endsWith('plan.pdf'));
+      assert.equal(pdfAttempts.length, 2);
+      assert.equal(pdfAttempts[0], pdfAttempts[1]);
+      assertClean();
+    } finally {
+      await context.close();
+    }
+  } finally {
+    await browser.close();
+  }
+});
+
+for (const device of ['Pixel 7', 'iPhone 13']) {
+  test(`${device} authentication controls fit all supported pages`, async t => {
+    const browser = await launchBrowser(device === 'iPhone 13' && process.env.BROWSER_TEST_WEBKIT === '1' ? 'webkit' : 'chromium');
+    t.after(() => browser.close());
+    const { context, page, assertClean } = await openPage(browser, mockSupabase, devices[device]);
+    t.after(() => context.close());
+    const checkFit = async field => {
+      const bounds = await field.boundingBox();
+      assert.ok(bounds, 'the control is visible');
+      assert.ok(bounds.width > 0 && bounds.x >= 0 && bounds.x + bounds.width <= page.viewportSize().width + 1,
+        'the control fits the touch viewport');
+    };
+
+    for (const file of ['index.html', 'app.html', 'premium-dashboard.html', 'director.html']) {
+      await page.goto(`${siteOrigin}/${file}`);
+      await page.waitForFunction(() => typeof document.getElementById('login').onsubmit === 'function');
+      await page.locator('#email').tap();
+      await checkFit(page.locator('#login'));
+      await checkFit(page.getByRole('button', { name: 'Увійти', exact: true }));
+      if (file === 'director.html') {
+        await checkFit(page.locator('#signup'));
+        continue;
+      }
+      await page.locator('#showSignup').tap();
+      await page.locator('#signupMethod').selectOption('phone');
+      const number = page.locator('#signupPhone');
+      await number.tap();
+      await number.fill('+380000000000');
+      await checkFit(number);
+      await checkFit(page.locator('#signupSubmit'));
+    }
+
+    assertClean();
+  });
+}
