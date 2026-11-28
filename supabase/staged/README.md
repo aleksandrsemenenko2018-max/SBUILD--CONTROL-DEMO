@@ -22,3 +22,9 @@ The fixture mimics the existing membership helpers and applies the actual migrat
 `zone_hierarchy.sql` adds floor → room → segment A–G to the existing zone table. Existing zone IDs and names are preserved. This extension uses the existing zone-access policies. Workers can browse their project hierarchy and owners or project foremen can create and rename typed zones. Moves, reclassification and deletion are outside this workflow because other records reference zone IDs.
 
 To verify both migration candidates in one empty disposable database, append `-f supabase/staged/zone_hierarchy.sql -f tests/sql/zone-hierarchy.sql` to the preceding command.
+
+## Work-report quality checklists
+
+`quality_report_link.sql` uses the existing `report_id` column. A worker can link a checklist to their own report, and a project manager can link a checklist to visible reports for their project. Linked checklists inherit the report zone. Project managers and the report author can read linked checklists. Final approval requires all linked checklists to be approved and preserves the resulting evidence. General project checklists remain available.
+
+For isolated assertions, run `tests/sql/quality-report-link-fixture.sql`, `supabase/staged/quality_report_link.sql` and `tests/sql/quality-report-link.sql` in that order after the work assignment fixture and migration.

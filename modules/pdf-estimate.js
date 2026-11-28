@@ -9,25 +9,28 @@ const meters = (value, unit) => decimal(value) / ({ мм: 1000, mm: 1000, см: 
 const finitePositive = value => Number.isFinite(value) && value > 0;
 
 export function positionedLines(items) {
-  const rows = [];
+  const blocks = [];
   for (const item of items) {
     const text = item.str?.trim();
     if (!text || !item.transform) continue;
     const [, , , , x, y] = item.transform;
-    if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
-    let row = rows.find(candidate => Math.abs(candidate.y - y) < 2);
-    if (!row) {
-      row = { y, blocks: [] };
+    if (Number.isFinite(x) && Number.isFinite(y)) {
+      blocks.push({ x, y, text, end: x + (item.width ?? 0) });
+    }
+  }
+  blocks.sort((left, right) => right.y - left.y || left.x - right.x);
+  const rows = [];
+  let row;
+  for (const block of blocks) {
+    if (!row || row.y - block.y >= 2) {
+      row = { y: block.y, blocks: [] };
       rows.push(row);
     }
-    row.blocks.push({ x, text, end: x + (item.width ?? 0) });
+    row.blocks.push(block);
   }
-  return rows.sort((a, b) => b.y - a.y).map(row => {
-    const blocks = row.blocks.sort((a, b) => a.x - b.x);
-    return blocks.map((block, index) => (
-      index > 0 ? (block.x - blocks[index - 1].end > 18 ? ' | ' : ' ') + block.text : block.text
-    )).join('');
-  });
+  return rows.map(row => row.blocks.sort((a, b) => a.x - b.x).map((block, index, ordered) => (
+    index > 0 ? (block.x - ordered[index - 1].end > 18 ? ' | ' : ' ') + block.text : block.text
+  )).join(''));
 }
 
 export function estimateCandidates(pages) {

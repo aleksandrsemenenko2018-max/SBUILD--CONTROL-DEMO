@@ -62,7 +62,7 @@ async function openRolePanel(role, requests, check, {
       await page.locator('#password').fill('mock-assignment-password');
       await page.locator('#login button').first().click();
       await page.locator('#identity').filter({ hasText: 'Тестовий користувач' }).waitFor({ state: 'attached' });
-      await page.locator(`[data-tab="${tab}"]:visible`).first().click();
+      await page.locator(`nav button[data-tab="${tab}"]`).click();
       const panel = page.locator(panelSelector);
       await panel.locator('summary').first().click();
       await check(panel, page);
@@ -123,6 +123,13 @@ test('worker starts an assignment and attaches their submitted report', async ()
     await panel.getByRole('button', { name: 'Почати роботу' }).click();
     assert.equal(await panel.locator('form').isVisible(), false);
     assert.equal(await panel.getByRole('button', { name: 'Скасувати завдання' }).count(), 0);
+    await panel.getByRole('button', { name: 'Створити звіт' }).click();
+    const reportForm = page.locator('#reportForm');
+    await reportForm.waitFor({ state: 'visible' });
+    assert.equal(await reportForm.locator('#reportProject').inputValue(), projectId);
+    assert.equal(await reportForm.locator('#reportZone').inputValue(), roomZone);
+    assert.equal(await reportForm.locator('[name="description"]').inputValue(), title);
+    await panel.locator('summary').first().click();
     await panel.getByRole('button', { name: 'Додати звіт до завдання' }).click();
     await panel.getByText(/Звіт подано/).waitFor();
     assert.deepEqual(updates, [
@@ -227,4 +234,47 @@ test('worker can browse the project hierarchy with no change controls', async ()
     assert.equal(await panel.locator('form').isVisible(), false);
     assert.equal(await panel.getByRole('button', { name: /^Перейменувати/ }).count(), 0);
   }, hierarchyPanel);
+});
+
+test('worker links a specialty checklist to their report and inherits its zone', async () => {
+  const qualityPath = '/rest/v1/sbuild_quality_checklists';
+  const finalReportId = '00000000-0000-4000-8000-000000000502';
+  const checklistTitle = 'Контроль бетонування';
+  let saved;
+  await openRolePanel('worker', ({ method, pathname, searchParams, body }) => {
+    if (pathname === '/rest/v1/sbuild_work_reports' &&
+        method === 'GET' && searchParams.get('select') === 'id,description,zone_id,status,work_date') {
+      assert.equal(searchParams.get('project_id'), 'eq.' + projectId);
+      return { json: [
+        { ...report, status: 'submitted' },
+        { ...report, id: finalReportId, status: 'owner_approved', description: 'Закритий звіт' },
+      ] };
+    }
+    if (pathname !== qualityPath) return;
+    if (method === 'GET') return { json: saved ? [{ ...saved, id: 'checklist' }] : [] };
+    if (method === 'POST') {
+      saved = body;
+      return { status: 201, json: null };
+    }
+  }, async panel => {
+    const form = panel.locator('#controlQualityForm');
+    const workReport = form.locator('#qualityReport');
+    await workReport.selectOption(reportId);
+    assert.equal(await workReport.locator('option').count(), 2);
+    assert.equal(await form.locator('#qualityZone').inputValue(), roomZone);
+    assert.equal(await form.locator('#qualityZone').isDisabled(), true);
+    await form.getByLabel('Спеціальність').selectOption('concrete');
+    await form.getByLabel('Назва перевірки').fill(checklistTitle);
+    await form.getByRole('button', { name: 'Створити чекліст' }).click();
+    const result = panel.locator('#controlQuality');
+    await result.getByText('Звіт: ' + report.description, { exact: true }).waitFor();
+    assert.equal(saved.project_id, projectId);
+    assert.equal(saved.zone_id, roomZone);
+    assert.equal(saved.report_id, reportId);
+    assert.equal(saved.title, checklistTitle);
+    assert.equal(saved.specialty, 'concrete');
+    assert.equal(saved.created_by, workerId);
+    assert.ok(saved.items.length > 0 && saved.items.every(item => !item.done));
+    assert.equal(await result.getByRole('button', { name: 'Погодити якість' }).count(), 0);
+  }, { panelSelector: '#sbuildControlAnalytics' });
 });

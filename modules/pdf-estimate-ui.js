@@ -69,8 +69,11 @@ analyse.addEventListener('click', async () => {
     const document = await loading.promise;
     if (document.numPages > 60) throw new Error('Для аналізу оберіть PDF до 60 сторінок.');
     const pages = [];
+    let extractedItems = 0;
     for (let page = 1; page <= document.numPages && current === selection; page++) {
       const content = await (await document.getPage(page)).getTextContent();
+      extractedItems += content.items.length;
+      if (extractedItems > 60000) throw new Error('Забагато текстових елементів. Розділіть PDF на частини.');
       pages.push({ page, lines: positionedLines(content.items) });
     }
     if (current !== selection) return;
@@ -87,7 +90,7 @@ analyse.addEventListener('click', async () => {
     if (current === selection) status.textContent = 'Не вдалося прочитати PDF. ' + error.message;
   } finally {
     try {
-      await loading?.destroy();
+      await loading?.destroy().catch(() => {});
     } finally {
       analyse.disabled = false;
     }
