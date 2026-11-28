@@ -1,3 +1,5 @@
+import { mountProjectFinanceChart } from "./project-finance-chart.js";
+
 const kindLabels = new Map([
   ['customer_charge', 'Нараховано замовнику'],
   ['customer_payment', 'Оплата від замовника'],
@@ -48,6 +50,7 @@ export function mountProjectLedger(supabase, hasOwnerAccess, getProjectId) {
   const more = document.getElementById('projectLedgerMore');
   const reload = document.getElementById('projectLedgerReload');
   const fieldset = form.querySelector('fieldset');
+  const charts = mountProjectFinanceChart({ supabase, hasOwnerAccess, getProjectId, formatCents });
   const pageSize = 50;
   let revision = 0;
   let nextPage = 0;
@@ -166,7 +169,8 @@ export function mountProjectLedger(supabase, hasOwnerAccess, getProjectId) {
 
   async function load() {
     reset();
-    if (!panel.open || !hasOwnerAccess()) return;
+    if (!panel.open || !hasOwnerAccess()) { charts.clear(); return; }
+    charts.refresh();
     const pid = getProjectId();
     if (!pid) return;
     currentProject = pid;
@@ -221,5 +225,5 @@ export function mountProjectLedger(supabase, hasOwnerAccess, getProjectId) {
   };
   reload.onclick = load;
   panel.addEventListener('toggle', load);
-  return { load, clear: () => { pending.clear(); reset(); } };
+  return { load, clear: () => { pending.clear(); charts.clear(); reset(); } };
 }

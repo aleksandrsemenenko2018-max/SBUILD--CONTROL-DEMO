@@ -9,6 +9,7 @@ const status = document.getElementById('pdfEstimateStatus');
 const references = document.getElementById('pdfEstimateReferences');
 const rows = [];
 let selection = 0;
+let sourceReferences = [];
 
 function field(type, value, label, update) {
   const input = document.createElement('input');
@@ -43,9 +44,15 @@ function drawRows() {
   }
 }
 
+export function resetPdfEstimate() {
+  pdfInput.value = '';
+  pdfInput.dispatchEvent(new Event('change'));
+}
+
 pdfInput.addEventListener('change', () => {
   selection++;
   rows.length = 0;
+  sourceReferences = [];
   drawRows();
   references.replaceChildren();
   status.textContent = '';
@@ -81,6 +88,8 @@ analyse.addEventListener('click', async () => {
     const result = estimateCandidates(pages);
     rows.splice(0, rows.length, ...result.candidates.map(row => ({ ...row, approved: false, workerRate: '', customerRate: '' })));
     drawRows();
+    sourceReferences = result.references;
+    pdfInput.dispatchEvent(new Event('sbuild:pdf-read'));
     references.textContent = result.references.map(row => 'С. ' + row.page + ' · ' + row.source).join('\n');
     status.textContent = rows.length
       ? 'Знайдено позицій: ' + rows.length + '. Перевірте джерела та позначте погоджені рядки.'
@@ -174,4 +183,91 @@ for (const [id, audience] of [['printPdfWorkerEstimate', 'worker'], ['printPdfCu
       status.textContent = error.message;
     }
   });
+}
+
+export function mountPlanClassification(invoke) {
+  const panel = document.getElementById('pdfClassification');
+  const form = panel.querySelector('form');
+  const lineList = panel.querySelector('[data-classification-lines]');
+  const result = panel.querySelector('[role="status"]');
+  const project = form.elements.project;
+  const submit = form.querySelector('button');
+  let version = 0;
+
+  function clear() {
+    version++;
+    lineList.replaceChildren();
+    result.textContent = '';
+    form.elements.consent.checked = false;
+    submit.disabled = true;
+  }
+
+  function fillLines() {
+    clear();
+    const seen = new Set();
+    const sources = [...rows.filter(row => row.page).map(row => ({ page: row.page, source: row.source })), ...sourceReferences];
+    let total = 0;
+    for (const { page, source } of sources) {
+      const key = page + ':' + source;
+      if (seen.has(key) || !source || source.length > 300 || total + source.length > 12000) continue;
+      if (seen.size >= 120) break;
+      seen.add(key);
+      total += source.length;
+      const box = document.createElement('input');
+      box.type = 'checkbox';
+      box.dataset.page = page;
+      box.value = source;
+      const label = document.createElement('label');
+      label.append(box, ' С. ' + page + ' · ' + source);
+      lineList.append(label);
+    }
+    submit.disabled = !seen.size;
+  }
+
+  pdfInput.addEventListener('change', clear);
+  pdfInput.addEventListener('sbuild:pdf-read', fillLines);
+  project.addEventListener('change', () => {
+    version++;
+    result.textContent = '';
+    submit.disabled = !lineList.childElementCount;
+  });
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    const projectId = project.value;
+    const lines = [...lineList.querySelectorAll('input:checked')]
+      .map(input => ({ page: Number(input.dataset.page), text: input.value }));
+    if (!projectId || !lines.length || !form.elements.consent.checked) {
+      result.textContent = 'Оберіть об’єкт, позначте рядки та підтвердьте передачу.';
+      return;
+    }
+    const current = ++version;
+    submit.disabled = true;
+    result.textContent = 'Класифікуємо вибрані рядки…';
+    try {
+      const { data, error } = await invoke({ projectId, lines });
+      if (current !== version) return;
+      if (error || !Array.isArray(data?.items)) throw new Error('Серверна класифікація недоступна.');
+      const labels = {
+        painting: 'фарбування', plaster: 'штукатурення', electrical: 'електрика', plumbing: 'сантехніка',
+        concrete: 'бетонні роботи', roofing: 'покрівля', flooring: 'підлоги', masonry: 'мурування',
+        material: 'матеріал', other: 'інше'
+      };
+      const classified = data.items.filter(item => Object.hasOwn(labels, item?.category) &&
+        lines.some(line => line.page === item.page && line.text === item.text));
+      result.textContent = classified.map(item => 'С. ' + item.page + ' · ' + labels[item.category] + ' · ' + item.text).join('\n')
+        || 'Класифікацію для вибраних рядків не отримано.';
+    } catch (error) {
+      if (current === version) result.textContent = error.message;
+    } finally {
+      if (current === version) submit.disabled = false;
+    }
+  });
+
+  return function update(availableProjects) {
+    const pending = project.value;
+    panel.classList.toggle('hidden', !availableProjects.length);
+    project.replaceChildren(new Option('Оберіть об’єкт', ''), ...availableProjects.map(row => new Option(row.name, row.id)));
+    if (availableProjects.some(row => row.id === pending)) project.value = pending;
+    if (!availableProjects.length) clear();
+  };
 }

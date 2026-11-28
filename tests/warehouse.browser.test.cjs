@@ -35,6 +35,17 @@ test('records stock without duplicating its operation key after a network interr
     await page.locator('#login button').first().click();
     await page.locator('.dash-tile[data-open="materials"]').click();
     await page.locator('#matProject option').filter({ hasText: project.name }).waitFor({ state: 'attached' });
+    const reference = page.locator('#materialReference');
+    await reference.locator('summary').click();
+    await reference.locator('select').nth(0).selectOption('ct17');
+    await reference.locator('select').nth(1).selectOption('cl51');
+    const guidance = reference.getByRole('status');
+    assert.match(await guidance.innerText(), /Ceresit вказує CT 17/);
+    assert.match(await guidance.getByRole('link').getAttribute('href'), /^https:\/\/www\.ceresit\.ua\//);
+    await reference.locator('select').nth(1).selectOption('rotband');
+    assert.match(await guidance.innerText(), /підтвердження в довіднику немає/);
+    await reference.locator('summary').click();
+
     const form = page.locator('#matMoveForm');
     const button = form.locator('button');
     await form.locator('[name="material"]').fill('Штукатурка');

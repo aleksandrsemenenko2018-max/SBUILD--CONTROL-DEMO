@@ -49,7 +49,7 @@ test('records an advance once after an interrupted response and reverses it with
     await page.locator('#password').fill('mock-password');
     await page.locator('#login button').first().click();
     await page.locator('[data-open="finance"]').click();
-    await page.locator('#projectLedger summary').click();
+    await page.locator('#projectLedger > summary').click();
     const form = page.locator('#projectLedgerForm');
     const submit = form.getByRole('button', { name: 'Записати операцію' });
     await form.locator('[name="kind"]').selectOption('customer_advance');

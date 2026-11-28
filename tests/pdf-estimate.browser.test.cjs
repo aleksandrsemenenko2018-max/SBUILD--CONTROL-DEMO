@@ -27,14 +27,23 @@ function fixture() {
 test('extracts text from a real PDF and exports only reviewed customer rates', async () => {
   const browser = await launchBrowser();
   try {
-    const flow = await openPage(browser, ({ method, pathname }) => {
+    const classified = [];
+    const project = { id: '00000000-0000-4000-8000-000000000010', name: 'Проєкт PDF', status: 'active' };
+    const flow = await openPage(browser, ({ method, pathname, body }) => {
+      if (method === 'POST' && pathname === '/functions/v1/sbuild-plan-analysis') {
+        classified.push(body);
+        return { json: { items: [
+          { page: 1, text: 'Painting 12 m2', category: 'painting' },
+          { page: 2, text: 'Unsupported amount', category: 'painting' }
+        ] } };
+      }
       if (method === 'POST' && pathname === '/auth/v1/token') {
         const user = { id: '00000000-0000-4000-8000-000000000001', aud: 'authenticated' };
         return { json: { access_token: 'mock-access', refresh_token: 'mock-refresh', token_type: 'bearer', expires_in: 3600, user } };
       }
       if (method === 'GET' && pathname === '/auth/v1/user') return { json: { id: '00000000-0000-4000-8000-000000000001' } };
       if (method === 'GET' && pathname.startsWith('/rest/v1/')) return {
-        json: pathname === '/rest/v1/sbuild_profiles' ? [{ full_name: 'QA', role: 'worker', active: true }] : []
+        json: pathname === '/rest/v1/sbuild_profiles' ? [{ full_name: 'QA', role: 'owner', active: true }] : pathname.endsWith('/sbuild_projects') ? [project] : []
       };
     });
     try {
@@ -53,6 +62,18 @@ test('extracts text from a real PDF and exports only reviewed customer rates', a
       await page.locator('#pdfEstimateStatus').filter({ hasText: 'Знайдено позицій: 1' }).waitFor({ timeout: 20000 });
       assert.equal(await page.getByLabel('Назва · 1').inputValue(), 'Painting');
       assert.equal(await page.getByLabel('Обсяг · 1').inputValue(), '12');
+      const classify = page.locator('#pdfClassification');
+      await classify.locator('summary').click();
+      await classify.locator('select').selectOption(project.id);
+      await classify.getByLabel(/Painting 12 m2/).check();
+      await classify.getByRole('button', { name: 'Класифікувати вибрані рядки' }).click();
+      assert.equal(classified.length, 0);
+      await classify.getByLabel(/Дозволяю передати/).check();
+      await classify.getByRole('button', { name: 'Класифікувати вибрані рядки' }).click();
+      await classify.getByRole('status').filter({ hasText: 'фарбування' }).waitFor();
+      assert.deepEqual(classified, [{ projectId: project.id, lines: [{ page: 1, text: 'Painting 12 m2' }] }]);
+      assert.doesNotMatch(await classify.getByRole('status').innerText(), /Unsupported amount/);
+
       await page.getByLabel('Розцінка виконавця · 1').fill('3');
       await page.getByLabel('Розцінка замовника · 1').fill('15');
       await page.getByLabel('Погодити позицію · 1').check();
