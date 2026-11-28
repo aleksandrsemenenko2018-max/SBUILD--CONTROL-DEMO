@@ -1,3 +1,5 @@
+import { chargeLines, clientChargeLabels } from './client-report-charges.js';
+
 const amount = new Intl.NumberFormat('uk-UA', {
   style: 'currency',
   currency: 'UAH'
@@ -42,7 +44,7 @@ function lineAmount(quantity, rate) {
   return Number.isSafeInteger(cents) ? cents : null;
 }
 
-export function buildClientReport(project, period, work, zones) {
+export function buildClientReport(project, period, work, zones, charges = []) {
   const zoneIndex = new Map(zones.map(zone => [zone.id, zone]));
   const groups = new Map();
   let knownTotal = 0;
@@ -67,7 +69,8 @@ export function buildClientReport(project, period, work, zones) {
       subtotal
     });
   }
-  return { project: String(project), period, groups: [...groups], knownTotal, unpricedCount };
+  return { project: String(project), period, groups: [...groups], knownTotal, unpricedCount,
+    ...(charges.length ? chargeLines(charges, period) : {}) };
 }
 
 export function readClientReportSnapshot(report, requestedStart) {
@@ -96,7 +99,8 @@ export function readClientReportSnapshot(report, requestedStart) {
   if (!Number.isSafeInteger(knownTotal) || report.knownTotal !== knownTotal || report.unpricedCount !== unpricedCount) {
     throw new Error('Підсумок збереженого звіту не збігається з рядками.');
   }
-  return { project: report.project, period, groups, knownTotal, unpricedCount };
+  return { project: report.project, period, groups, knownTotal, unpricedCount,
+    ...(report.charges === undefined ? {} : chargeLines(report.charges, period)) };
 }
 
 const photoCaptions = new Map([
@@ -157,6 +161,16 @@ export function renderClientReport(doc, report, selectedPhotos = new Map()) {
     fragment.append(make('strong', label + ' · ' + amount.format(report.knownTotal / 100)));
     if (report.unpricedCount) fragment.append(make('p', 'Робіт без ціни: ' + report.unpricedCount));
   }
+  if (report.charges?.length) {
+    const section = make('section');
+    section.append(make('h2', 'Погоджені додаткові позиції'));
+    for (const row of report.charges) {
+      section.append(make('p', [row.date, clientChargeLabels.get(row.kind),
+        row.description, amount.format(row.subtotal / 100)].join(' · ')));
+    }
+    section.append(make('strong', 'Разом додаткові позиції · ' + amount.format(report.chargeTotal / 100)));
+    fragment.append(section);
+  }
   return fragment;
 }
 
@@ -174,6 +188,10 @@ export function clientReportRows(report) {
       rows.push([report.project, report.period.start, report.period.end, zone, row.date,
         row.description, row.quantity, row.unit, row.subtotal === null ? '' : row.subtotal / 100]);
     }
+  }
+  for (const row of report.charges ?? []) {
+    rows.push([report.project, report.period.start, report.period.end, '', row.date,
+      clientChargeLabels.get(row.kind) + ' · ' + row.description, '', '', row.subtotal / 100]);
   }
   return rows;
 }

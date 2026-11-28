@@ -98,3 +98,9 @@ Run `tests/sql/attendance-payroll-fixture.sql`, `supabase/staged/attendance_week
 Apply `owner_daily_summary.sql` after work assignments and communications access policies in an isolated environment, then verify an active owner and an authenticated non-owner. The read-only RPC `sbuild_owner_daily_summary` returns counts per accessible project. The activity counts are a live snapshot. The date defaults to Europe/Kyiv and determines which unfinished assignments are due or overdue. Telegram distribution and scheduling are separate.
 
 For an isolated PostgreSQL fixture run the three files in order with `psql -v ON_ERROR_STOP=1 -f tests/sql/owner-daily-summary-fixture.sql -f supabase/staged/owner_daily_summary.sql -f tests/sql/owner-daily-summary.sql`.
+
+## Customer-approved report charges
+
+Apply `client_report_charges.sql` after the weekly snapshot schema on a disposable or staging database. An active owner explicitly enters a date, customer-facing description, category, and amount in UAH. Live reports and new weekly snapshots include only active approvals for the selected project and period. CSV, XLSX and PDF use the same customer fields. Revocation leaves saved snapshots intact.
+
+The approval table has its own row policies and audit actor. It has no dependency on internal expense, payroll, purchase-price, inventory, receipt or ledger data. Approvals are report lines and do not post receivables. Attachment disclosure and accounting remain separate workflows. The isolated SQL runner covers owner approval, foreign project/period exclusion, revocation, and immutable snapshots.

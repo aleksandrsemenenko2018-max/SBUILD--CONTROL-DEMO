@@ -749,6 +749,23 @@ html body #workspace #projects #projectList>.item.compact-project .project-state
 <p id="clientReportStatus" role="status"></p>
 <div id="clientReportResult"></div>
 <div id="clientReportPhotos"></div>
+<details id="clientReportCharges" class="sbuild-department-fold hidden">
+<summary>Додаткові позиції для замовника</summary>
+<div>
+<form id="clientReportChargeForm">
+<div class="grid">
+<label>Тип позиції<select name="kind"><option value="material">Матеріали</option><option value="other">Додаткові послуги та витрати</option></select></label>
+<label>Дата<input name="date" type="date" required></label>
+<label>Опис для замовника<input name="description" required maxlength="200"></label>
+<label>Сума для замовника, грн<input name="amount" inputmode="decimal" required maxlength="17"></label>
+</div>
+<label><input name="approved" type="checkbox" required> Погоджено для передачі замовнику</label>
+<button type="submit">Погодити й додати</button>
+</form>
+<p id="clientReportChargeStatus" role="status"></p>
+<ul id="clientReportChargeList"></ul>
+</div>
+</details>
 </section></div></details><details id="sbuildAssignments" class="sbuild-department-fold">
 <summary>Призначення та виконання робіт</summary>
 <div style="padding:12px">
@@ -816,6 +833,7 @@ html body #workspace #projects #projectList>.item.compact-project .project-state
 import {openPdfPreview,httpsUrl,isStorageObjectPath,signedStorageUrl} from "./modules/upload-safety.js";
 import {fetchProjectContacts} from "./modules/project-contacts.js";
 import {createClient} from "https://esm.sh/@supabase/supabase-js@2.119.2";
+import { clientChargeLabels, reportChargeInput } from "./modules/client-report-charges.js";
 import { buildClientReport, canAttachClientPhoto, clientPhotoCaption, clientReportCsv, clientReportRows, readClientReportSnapshot, renderClientReport, reportWeek } from "./modules/client-report.js";
 import { summarizeProjectFinance } from "./modules/estimate-finance.js";
 import {downloadSpreadsheet,spreadsheetBlob} from "./modules/spreadsheet.js";
@@ -1577,6 +1595,7 @@ ruleForm.elements.hidden.addEventListener("change",updateRecheck);
 async function load(){
  if(!user||!projects.length)return;
  const request=++reportRequest,actor=user.id;
+ e("clientReportCharges").classList.toggle("hidden",!clientIsOwner());
  fill("photoProject",projects);const pid=e("photoProject").value;
  e("photoReport").disabled=true;
  ruleForm.classList.add("hidden");
@@ -1670,6 +1689,10 @@ ruleForm.onsubmit=async ev=>{
 const clientResult=e("clientReportResult"),clientStatus=e("clientReportStatus");
 const clientBuild=e("clientReportBuild"),clientPrint=e("clientReportPrint"),clientPhotos=e("clientReportPhotos");
 const clientCsv=e("clientReportCsv"),clientXlsx=e("clientReportXlsx"),clientSnapshot=e("clientReportSnapshot");
+const clientChargeForm=e("clientReportChargeForm"),clientChargeStatus=e("clientReportChargeStatus"),clientChargeList=e("clientReportChargeList");
+const clientIsOwner=()=>Boolean(user&&profile?.active&&profile.role==="owner");
+const clientHasRows=()=>Boolean(clientReport?.groups.length||clientReport?.charges?.length);
+const pendingClientCharges=new Map();
 let clientVersion=0,clientReport=null;
 const selectedPhotos=new Map();
 const clientPhotoUrls=new Set();
@@ -1683,13 +1706,19 @@ function clearClientReport(){
  clientStatus.textContent="";
  clientResult.replaceChildren();
  clientPhotos.replaceChildren();
+ clientChargeList.replaceChildren();
  selectedPhotos.clear();
  for(const url of clientPhotoUrls)URL.revokeObjectURL(url);
  clientPhotoUrls.clear();
 }
 
-e("photoProject").addEventListener("change",clearClientReport);
-e("clientWeek").addEventListener("input",clearClientReport);
+function clearClientChargeForm(){
+ clientChargeForm.reset();
+ clientChargeForm.elements.date.value=e("clientWeek").value;
+ clientChargeStatus.textContent="";
+}
+e("photoProject").addEventListener("change",()=>{clearClientReport();clearClientChargeForm()});
+e("clientWeek").addEventListener("input",()=>{clearClientReport();clearClientChargeForm()});
 e("logout").addEventListener("click",clearClientReport);
 
 
@@ -1763,6 +1792,65 @@ function addClientPhoto(photo,work,caption,version){
  };
 }
 
+async function readClientCharges(pid,period){
+ try{
+  return await readProjectRows(()=>sb.from("sbuild_client_report_charges")
+   .select("id,charge_date,kind,description,amount_cents")
+   .eq("project_id",pid).is("revoked_at",null)
+   .gte("charge_date",period.start).lte("charge_date",period.end).order("charge_date").order("id"));
+ }catch(error){
+  if(["42P01","PGRST205"].includes(error.code))return null;
+  throw error;
+ }
+}
+
+function showClientCharges(charges,pid,version){
+ for(const charge of charges){
+  const row=document.createElement("li"),button=document.createElement("button");
+  button.type="button";
+  button.textContent="Скасувати погодження";
+  row.append(charge.charge_date+" · "+clientChargeLabels.get(charge.kind)+" · "+charge.description+" ",button);
+  button.onclick=async()=>{
+   if(version!==clientVersion||!clientIsOwner()||e("photoProject").value!==pid)return;
+   if(!window.confirm("Вилучити цю позицію з майбутніх звітів? Збережені звіти не зміняться."))return;
+   button.disabled=true;
+   try{
+    const {error}=await sb.rpc("sbuild_revoke_client_report_charge",{p_id:charge.id});
+    if(error)throw error;
+    if(version===clientVersion)await clientBuild.onclick();
+   }catch{if(version===clientVersion)clientChargeStatus.textContent="Не вдалося скасувати погодження."}
+   finally{button.disabled=false}
+  };
+  clientChargeList.append(row);
+ }
+}
+
+clientChargeForm.onsubmit=async event=>{
+ event.preventDefault();
+ if(!clientIsOwner())return;
+ const pid=e("photoProject").value,start=e("clientWeek").value;
+ const actor=user.id,button=clientChargeForm.querySelector("button");
+ if(!pid||!start){clientChargeStatus.textContent="Оберіть об’єкт і тиждень.";return}
+ button.disabled=true;
+ try{
+  const row=reportChargeInput(new FormData(clientChargeForm),pid,reportWeek(start));
+  const signature=JSON.stringify(row),id=pendingClientCharges.get(signature)??crypto.randomUUID();
+  pendingClientCharges.set(signature,id);
+  const {error}=await sb.from("sbuild_client_report_charges").upsert({id,...row},{onConflict:"id",ignoreDuplicates:true});
+  if(error)throw error;
+  pendingClientCharges.delete(signature);
+  if(actor!==user?.id||pid!==e("photoProject").value||start!==e("clientWeek").value)return;
+  clearClientChargeForm();
+  clientChargeStatus.textContent="Позицію погоджено.";
+  await clientBuild.onclick();
+ }catch(error){
+  if(actor===user?.id&&pid===e("photoProject").value&&start===e("clientWeek").value){
+   clientChargeStatus.textContent=["42P01","PGRST205"].includes(error.code)?
+    "Сховище додаткових позицій недоступне.":error.message||"Не вдалося погодити позицію.";
+  }
+ }finally{button.disabled=false}
+};
+
 clientBuild.onclick=async()=>{
  clearClientReport();
  const version=clientVersion;
@@ -1773,16 +1861,21 @@ clientBuild.onclick=async()=>{
  try{
   const period=reportWeek(e("clientWeek").value);
   const pid=project.id;
-  const [work,zones]=await Promise.all([
+  const [work,zones,charges]=await Promise.all([
    readProjectRows(()=>sb.from("sbuild_work_reports").select("id,zone_id,description,quantity,unit,client_rate,work_date,status")
     .eq("project_id",pid).eq("status","owner_approved").gte("work_date",period.start).lte("work_date",period.end).order("work_date").order("id")),
-   readProjectRows(()=>sb.from("sbuild_zones").select("id,name,parent_id").eq("project_id",pid).order("id"))
+   readProjectRows(()=>sb.from("sbuild_zones").select("id,name,parent_id").eq("project_id",pid).order("id")),
+   readClientCharges(pid,period)
   ]);
   if(version!==clientVersion)return;
-  clientReport=buildClientReport(project.name,period,work,zones);
+  clientReport=buildClientReport(project.name,period,work,zones,(charges||[]).map(charge=>({
+   date:charge.charge_date,kind:charge.kind,description:charge.description,subtotal:charge.amount_cents
+  })));
+  if(charges)showClientCharges(charges,pid,version);
+  else clientStatus.textContent="Сховище додаткових позицій недоступне.";
   renderClientPreview();
   clientPrint.disabled=false;
-  clientCsv.disabled=!clientReport.groups.length;
+  clientCsv.disabled=!clientHasRows();
   clientXlsx.disabled=clientCsv.disabled;
 
   const included=new Map(clientReport.groups.flatMap(([,rows])=>rows.map(row=>[row.id,row])));
@@ -1829,7 +1922,7 @@ clientSnapshot.onclick=async()=>{
   clientReport=readClientReportSnapshot(data.report,start);
   renderClientPreview();
   clientPrint.disabled=false;
-  clientCsv.disabled=!clientReport.groups.length;
+  clientCsv.disabled=!clientHasRows();
   clientXlsx.disabled=clientCsv.disabled;
   clientStatus.textContent="Збережений звіт · без вкладень.";
  }catch(error){if(version===clientVersion)clientStatus.textContent=error.message}
@@ -1837,7 +1930,7 @@ clientSnapshot.onclick=async()=>{
 };
 
 clientCsv.onclick=()=>{
- if(!clientReport?.groups.length||profile?.role!=="owner"||!profile.active)return;
+ if(!clientHasRows()||!clientIsOwner())return;
  const blob=new Blob([clientReportCsv(clientReport)],{type:"text/csv;charset=utf-8"});
  const url=URL.createObjectURL(blob);
  const link=document.createElement("a");
@@ -1848,7 +1941,7 @@ clientCsv.onclick=()=>{
 };
 
 clientXlsx.onclick=async()=>{
- if(!clientReport?.groups.length||profile?.role!=="owner"||!profile.active)return;
+ if(!clientHasRows()||!clientIsOwner())return;
  const version=clientVersion,report=clientReport;
  clientXlsx.disabled=true;
  try{
@@ -1881,6 +1974,10 @@ return ()=>{
  e("photoReport").replaceChildren();
  e("photoGallery").replaceChildren();
  clearClientReport();
+ clearClientChargeForm();
+ pendingClientCharges.clear();
+ e("clientReportCharges").classList.add("hidden");
+ e("clientReportCharges").open=false;
  msg.textContent="";
 };
 })();

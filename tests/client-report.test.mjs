@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildClientReport, canAttachClientPhoto, clientPhotoCaption, clientReportCsv, reportWeek } from '../modules/client-report.js';
+import { buildClientReport, canAttachClientPhoto, clientPhotoCaption, clientReportCsv, readClientReportSnapshot, reportWeek } from '../modules/client-report.js';
 
 const period = reportWeek('2024-02-27');
 
@@ -74,7 +74,6 @@ test('quotes CSV cells and neutralizes formula-like values from project data', (
 });
 
 test('loads a stored report with exact totals and ignores private snapshot keys', async () => {
-  const { readClientReportSnapshot } = await import('../modules/client-report.js');
   const snapshot = {
     project: 'Об’єкт', period: { start: '2026-11-23', end: '2026-11-29' },
     groups: [['Зона', [{ date: '2026-11-24', description: 'Монтаж', quantity: '2', unit: 'м²', subtotal: 12300, worker_rate: 991 }]]],
@@ -85,4 +84,23 @@ test('loads a stored report with exact totals and ignores private snapshot keys'
   assert.equal(report.groups[0][1][0].subtotal, 12300);
   assert.throws(() => readClientReportSnapshot({ ...snapshot, knownTotal: 151 }, '2026-11-23'), /Підсумок/);
   assert.throws(() => readClientReportSnapshot(snapshot, '2026-11-30'), /Некоректний/);
+});
+
+test('exports separate customer-approved material and service lines and ignores private fields', () => {
+  const charge = {
+    date: period.start, kind: 'material', description: '+Штукатурка', subtotal: 1234,
+    private_cost: 999999, approved_by: 'private-user'
+  };
+  const report = buildClientReport('Об’єкт', period, [], [], [charge]);
+  assert.equal(report.chargeTotal, 1234);
+  assert.equal(report.knownTotal, 0);
+  const csv = clientReportCsv(report);
+  assert.match(csv, /Матеріали · \+Штукатурка.*12\.34/);
+  assert.doesNotMatch(csv, /999999|private-user/);
+  assert.deepEqual(readClientReportSnapshot(report, period.start).charges, [
+    { date: period.start, kind: 'material', description: '+Штукатурка', subtotal: 1234 }
+  ]);
+  assert.throws(() => buildClientReport('Об’єкт', period, [], [], [
+    { ...charge, date: '2024-02-30' }
+  ]), /додаткова позиція/);
 });

@@ -77,7 +77,7 @@ test('prints only approved client work and explicitly selected photos', async ()
     await signIn(page);
 
     await page.locator('[data-tab="reports"]').click();
-    await page.locator('#sbuildPhotos summary').click();
+    await page.locator('#sbuildPhotos > summary').click();
     await page.locator('#photoProject option').filter({ hasText: 'Тестовий об’єкт' }).waitFor({ state: 'attached' });
     await page.locator('#clientWeek').fill('2026-11-23');
     await page.locator('#clientReportBuild').click();
@@ -158,6 +158,75 @@ test('shows private finance summary only for an active owner', async () => {
     assert.ok(!worker.seen.some(({ pathname }) =>
       pathname === '/rest/v1/sbuild_weekly_payouts' || pathname === '/rest/v1/sbuild_project_expense_totals'));
     worker.assertClean();
+  } finally {
+    await browser.close();
+  }
+});
+
+test('requires an explicit approval and exports a charges-only weekly report', async () => {
+  const browser = await launchBrowser();
+  const approvedCharges = [];
+  try {
+    const { page, seen, assertClean } = await openPage(browser, request => {
+      const { method, pathname, body, searchParams } = request;
+      if (pathname === '/rest/v1/sbuild_client_report_charges') {
+        if (method === 'POST') {
+          approvedCharges.push({ ...body, purchase_price: 9999 });
+          return { status: 204 };
+        }
+        if (method === 'GET') return { json: approvedCharges };
+      }
+      if (pathname === '/rest/v1/rpc/sbuild_revoke_client_report_charge' && method === 'POST') {
+        const index = approvedCharges.findIndex(item => item.id === body.p_id);
+        assert.notEqual(index, -1);
+        approvedCharges.splice(index, 1);
+        return { status: 204 };
+      }
+      if (pathname === '/rest/v1/sbuild_work_reports' && searchParams.has('work_date')) return { json: [] };
+      return mock(request);
+    });
+    await signIn(page);
+    await page.locator('[data-tab="reports"]').click();
+    await page.locator('#sbuildPhotos > summary').click();
+    await page.locator('#photoProject option').filter({ hasText: 'Тестовий об’єкт' }).waitFor({ state: 'attached' });
+    await page.locator('#clientWeek').fill('2026-11-23');
+    await page.locator('#clientReportCharges > summary').click();
+    const form = page.locator('#clientReportChargeForm');
+    await form.locator('[name="description"]').fill('Погоджена фарба');
+    await form.locator('[name="amount"]').fill('42,37');
+    const submit = form.getByRole('button');
+    await submit.click();
+    assert.equal(approvedCharges.length, 0);
+    await form.getByRole('checkbox').check();
+    await submit.click();
+    const report = page.locator('#clientReportResult').filter({ hasText: 'Погоджена фарба' });
+    await report.waitFor();
+    assert.match(await report.innerText(), /Матеріали.*42,37/);
+    assert.equal(approvedCharges[0].amount_cents, 4237);
+    assert.equal(approvedCharges[0].charge_date, '2026-11-23');
+    const download = page.waitForEvent('download');
+    await page.locator('#clientReportCsv').click();
+    const csv = await download;
+    const contents = await readFile(await csv.path(), 'utf8');
+    assert.match(contents, /Погоджена фарба.*42\.37/);
+    assert.doesNotMatch(contents, /9999|purchase_price/);
+    assert.ok(!seen.some(({ pathname }) => pathname.includes('sbuild_expenses') || pathname.includes('inventory')));
+    assert.equal(seen.find(({ pathname, method }) =>
+      pathname === '/rest/v1/sbuild_client_report_charges' && method === 'POST').body.description, 'Погоджена фарба');
+
+    const popup = page.waitForEvent('popup');
+    await page.locator('#clientReportPrint').click();
+    const preview = await popup;
+    await preview.getByText(/Матеріали · Погоджена фарба · 42,37/).waitFor();
+    assert.doesNotMatch(await preview.locator('body').innerText(), /9999|purchase_price/);
+    await preview.close();
+
+    page.once('dialog', dialog => dialog.accept());
+    await page.getByRole('button', { name: 'Скасувати погодження' }).click();
+    await report.waitFor({ state: 'hidden' });
+    assert.equal(approvedCharges.length, 0);
+    await page.waitForFunction(() => document.getElementById('clientReportCsv').disabled);
+    assertClean();
   } finally {
     await browser.close();
   }
