@@ -28,3 +28,23 @@ To verify both migration candidates in one empty disposable database, append `-f
 `quality_report_link.sql` uses the existing `report_id` column. A worker can link a checklist to their own report, and a project manager can link a checklist to visible reports for their project. Linked checklists inherit the report zone. Project managers and the report author can read linked checklists. Final approval requires all linked checklists to be approved and preserves the resulting evidence. General project checklists remain available.
 
 For isolated assertions, run `tests/sql/quality-report-link-fixture.sql`, `supabase/staged/quality_report_link.sql` and `tests/sql/quality-report-link.sql` in that order after the work assignment fixture and migration.
+
+## Work-instruction acknowledgement
+
+`work_instruction_acknowledgement.sql` follows `work_assignments.sql`. Managers enter the job-specific technology instructions when assigning work. The assigned worker reads and acknowledges them before starting. PostgreSQL enforces the start condition and stores the actor and timestamp in an append-only acknowledgement. Previously issued assignments without instructions are grandfathered.
+
+For isolated assertions, run `tests/sql/work-instruction-fixture.sql`, `supabase/staged/work_instruction_acknowledgement.sql` and `tests/sql/work-instruction.sql` in that order after the work assignment fixture and migration.
+
+## Hidden-work photo requirements
+
+`photo_requirements_control.sql` enables owners and project foremen to configure the existing default photo-rule row until the report is finally approved. The change locks the report, is audited, and keeps the existing server-side photo approval checks. Rule changes are made through the scoped RPC. A recheck can be required when hidden-work evidence is required.
+
+For isolated assertions, run `tests/sql/photo-requirements-fixture.sql`, `supabase/staged/photo_requirements_control.sql` and `tests/sql/photo-requirements.sql` in that order after the work assignment fixture and migration.
+
+## Project finance ledger
+
+`project_finance_ledger.sql` depends on the project and profile tables plus the existing private project-access helper. This staged schema gives active owners an append-only UAH ledger. Owners can record agreed customer charges, actual payments and advances, refunds, and transport expenses. A reversal records a reason and cancels one original entry without erasing it. Retry of an identical operation uses its original ID.
+
+Customer balance is recorded charges plus refunds minus payments and advances. A negative balance is customer credit. Approved work stays in existing project finance analytics until an agreed charge is entered. This ledger does not infer invoices, due dates, taxes, rates, or customer-facing receipt eligibility. Transport entries stay separate from the existing expense-based margin and the customer report.
+
+Verify the schema in a disposable database with `tests/sql/work-assignments-fixture.sql`, `supabase/staged/project_finance_ledger.sql`, and `tests/sql/project-finance-ledger.sql` in that order. The existing isolated SQL CI runs these files. Browser scenarios stub every Supabase request, including the ledger RPC. When the staged schema is unavailable, the app shows the ledger as unavailable and disables recording.

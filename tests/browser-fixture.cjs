@@ -40,7 +40,7 @@ async function openPage(browser, mockSupabase, contextOptions = {}) {
       const contentType = request.headers()['content-type'] ?? '';
       const rawBody = request.postDataBuffer();
       const body = rawBody && contentType.includes('json') ? request.postDataJSON() : null;
-      const mocked = mockSupabase({ method, pathname, searchParams, body, rawBody, contentType });
+      const mocked = await mockSupabase({ method, pathname, searchParams, body, rawBody, contentType });
       seen.push({ method, pathname, body });
       const headers = { 'access-control-allow-origin': siteOrigin };
       if (mocked?.abort) return route.abort(mocked.abort);

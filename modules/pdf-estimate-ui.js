@@ -1,4 +1,5 @@
-import { buildReviewedEstimate, estimateCandidates, estimateCsv, positionedLines } from './pdf-estimate.js';
+import { buildReviewedEstimate, estimateCandidates, estimateCsv, estimateRows, positionedLines } from './pdf-estimate.js';
+import { downloadSpreadsheet, spreadsheetBlob } from './spreadsheet.js';
 
 const endpoint = 'https://esm.sh/pdfjs-dist@4.10.38/legacy/build/';
 const pdfInput = document.getElementById('pdf');
@@ -114,6 +115,61 @@ for (const [id, audience] of [['exportPdfWorkerEstimate', 'worker'], ['exportPdf
       download.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       status.textContent = 'Експортовано погоджених позицій: ' + estimate.length;
+    } catch (error) {
+      status.textContent = error.message;
+    }
+  });
+}
+
+for (const [id, audience] of [['exportPdfWorkerXlsx', 'worker'], ['exportPdfCustomerXlsx', 'customer']]) {
+  const button = document.getElementById(id);
+  button.addEventListener('click', async () => {
+    const selected = selection;
+    button.disabled = true;
+    try {
+      const estimate = buildReviewedEstimate(rows, audience);
+      if (!estimate.length) throw new Error('Позначте погоджені позиції.');
+      const file = await spreadsheetBlob(estimateRows(estimate));
+      if (selected !== selection) return;
+      downloadSpreadsheet(file, 'sbuild-estimate-' + audience);
+      status.textContent = 'Експортовано погоджених позицій: ' + estimate.length;
+    } catch (error) {
+      if (selected === selection) status.textContent = error.message;
+    } finally {
+      button.disabled = false;
+    }
+  });
+}
+
+for (const [id, audience] of [['printPdfWorkerEstimate', 'worker'], ['printPdfCustomerEstimate', 'customer']]) {
+  document.getElementById(id).addEventListener('click', () => {
+    try {
+      const estimate = buildReviewedEstimate(rows, audience);
+      if (!estimate.length) throw new Error('Позначте погоджені позиції.');
+      const preview = window.open('', '_blank');
+      if (!preview) throw new Error('Дозвольте відкрити вікно попереднього перегляду.');
+      preview.opener = null;
+      const doc = preview.document;
+      doc.documentElement.lang = 'uk';
+      doc.title = audience === 'worker' ? 'Кошторис виконавця' : 'Кошторис замовника';
+      const style = doc.createElement('style');
+      style.textContent = 'body{font:14px system-ui;padding:1rem}table{border-collapse:collapse;width:100%}td,th{border:1px solid #777;padding:.4rem;text-align:left}tr{break-inside:avoid}@media print{button{display:none}}';
+      doc.head.append(style);
+      const title = doc.createElement('h1');
+      title.textContent = doc.title;
+      const print = doc.createElement('button');
+      print.textContent = 'Друкувати / зберегти PDF';
+      print.onclick = () => preview.print();
+      const table = doc.createElement('table');
+      for (const [rowIndex, values] of estimateRows(estimate).entries()) {
+        const row = table.insertRow();
+        for (const value of values) {
+          const cell = doc.createElement(rowIndex ? 'td' : 'th');
+          cell.textContent = value ?? '';
+          row.append(cell);
+        }
+      }
+      doc.body.append(title, print, table);
     } catch (error) {
       status.textContent = error.message;
     }

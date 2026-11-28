@@ -7,7 +7,7 @@ test('records stock without duplicating its operation key after a network interr
   const transfers = [];
   const user = { id: '00000000-0000-4000-8000-000000000001', aud: 'authenticated' };
   const project = { id: '00000000-0000-4000-8000-000000000010', name: 'Склад QA', status: 'active' };
-  const mock = ({ method, pathname, body }) => {
+  const mock = async ({ method, pathname, body }) => {
     if (method === 'POST' && pathname === '/auth/v1/token') {
       return { json: { access_token: 'mock-access', refresh_token: 'mock-refresh', token_type: 'bearer', expires_in: 3600, user } };
     }
@@ -18,7 +18,10 @@ test('records stock without duplicating its operation key after a network interr
     }
     if (method === 'GET' && pathname.startsWith('/rest/v1/')) {
       if (pathname.endsWith('/sbuild_profiles')) return { json: [{ full_name: 'QA Owner', role: 'owner', active: true }] };
-      if (pathname.endsWith('/sbuild_projects')) return { json: [project] };
+      if (pathname.endsWith('/sbuild_projects')) {
+        await new Promise(resolve => setTimeout(resolve, 400));
+        return { json: [project] };
+      }
       return { json: [] };
     }
   };

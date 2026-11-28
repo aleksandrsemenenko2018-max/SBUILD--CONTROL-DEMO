@@ -16,6 +16,7 @@ const zones = [
 ];
 const report = { id: reportId, zone_id: roomZone, description: 'Повторне шпаклювання', work_date: '2026-11-26' };
 const title = 'Шпаклювання стіни';
+const instruction = 'Використати схвалену технологічну карту об’єкта. Перевірити основу перед початком.';
 const assignment = {
   id: assignmentId, title, status: 'assigned', project_id: projectId, zone_id: roomZone,
   assigned_to: workerId, due_on: '2026-11-30', report_id: null,
@@ -90,13 +91,15 @@ test('foreman creates an assignment using the project roster and full zone path'
     if (method === 'POST') {
       assert.deepEqual(body, {
         assigned_to: workerId, due_on: null, project_id: projectId, title, zone_id: roomZone,
+        instruction_text: instruction,
       });
-      task = { ...assignment, due_on: null };
+      task = { ...assignment, due_on: null, instruction_text: instruction };
       return { status: 201, json: null };
     }
   }, async panel => {
     const form = panel.locator('form');
     await form.getByLabel('Назва роботи').fill(title);
+    await form.getByLabel('Технологія виконання роботи').fill(instruction);
     await form.getByLabel('Зона').selectOption({ label: 'Поверх 2 / Кімната 5' });
     await form.getByLabel('Виконавець').selectOption({ label: 'Тестовий виконавець' });
     await form.getByRole('button', { name: 'Призначити роботу' }).click();
@@ -277,4 +280,102 @@ test('worker links a specialty checklist to their report and inherits its zone',
     assert.ok(saved.items.length > 0 && saved.items.every(item => !item.done));
     assert.equal(await result.getByRole('button', { name: 'Погодити якість' }).count(), 0);
   }, { panelSelector: '#sbuildControlAnalytics' });
+});
+
+test('assignee must acknowledge the issued instruction before starting work', async () => {
+  let task = { ...assignment, instruction_text: instruction };
+  let acknowledgementCount = 0;
+  let starts = 0;
+  await openRolePanel('worker', ({ method, pathname, body }) => {
+    if (method === 'POST' && pathname === '/rest/v1/sbuild_work_assignment_acknowledgements') {
+      assert.deepEqual(body, { assignment_id: assignmentId });
+      acknowledgementCount += 1;
+      task = { ...task, acknowledgement: { acknowledged_at: '2026-11-28T00:04:00Z' } };
+      return { status: 201, json: null };
+    }
+    if (pathname !== assignmentPath) return;
+    if (method === 'GET') return { json: [task] };
+    if (method === 'PATCH') {
+      assert.equal(acknowledgementCount, 1);
+      assert.deepEqual(body, { status: 'in_progress', report_id: null });
+      starts += 1;
+      task = { ...task, ...body };
+      return { json: [{ id: assignmentId }] };
+    }
+  }, async panel => {
+    const technology = panel.getByText('Технологія виконання', { exact: true });
+    await technology.click();
+    await panel.getByText(instruction, { exact: true }).waitFor();
+    const start = panel.getByRole('button', { name: 'Почати роботу' });
+    assert.equal(await start.count(), 0);
+    await panel.getByRole('button', { name: 'Підтвердити ознайомлення' }).click();
+    await start.waitFor();
+    await technology.click();
+    await panel.getByText(/Ознайомлення підтверджено/).waitFor();
+    await start.click();
+    await panel.getByRole('button', { name: 'Створити звіт' }).waitFor();
+    assert.equal(starts, 1);
+    assert.equal(acknowledgementCount, 1);
+  });
+});
+
+const photoPanel = { panelSelector: '#sbuildPhotos' };
+const photoRulesPath = '/rest/v1/sbuild_work_photo_requirements';
+const photoRpcPath = '/rest/v1/rpc/sbuild_set_work_photo_requirements';
+const defaultPhotoRules = { required_before: true, required_after: true, hidden_work: false, requires_recheck: false };
+
+function photoReportMock({ method, pathname, searchParams }) {
+  if (method === 'GET' && pathname === '/rest/v1/sbuild_work_reports' &&
+      searchParams.get('select')?.startsWith('id,zone_id,description,work_date,status')) {
+    assert.equal(searchParams.get('project_id'), 'eq.' + projectId);
+    return { json: [{ ...report, status: 'submitted' }] };
+  }
+}
+
+test('foreman updates the default photo requirements through the scoped RPC', async () => {
+  let rules = { ...defaultPhotoRules };
+  let changed = 0;
+  await openRolePanel('foreman', request => {
+    const { method, pathname, searchParams, body } = request;
+    if (method === 'GET' && pathname === photoRulesPath) {
+      assert.equal(searchParams.get('report_id'), 'eq.' + reportId);
+      return { json: [rules] };
+    }
+    if (method === 'POST' && pathname === photoRpcPath) {
+      assert.deepEqual(body, {
+        p_report_id: reportId, p_required_before: true, p_required_after: true,
+        p_hidden_work: true, p_requires_recheck: true,
+      });
+      rules = { ...rules, hidden_work: true, requires_recheck: true };
+      changed += 1;
+      return { json: null };
+    }
+    return photoReportMock(request);
+  }, async panel => {
+    await panel.locator('#photoReport').selectOption(reportId);
+    const form = panel.locator('#photoRulesForm');
+    await form.waitFor({ state: 'visible' });
+    const recheck = form.getByRole('checkbox', { name: 'Повторне фото наступного спеціаліста' });
+    assert.equal(await recheck.isDisabled(), true);
+    await form.getByRole('checkbox', { name: /Приховані роботи/ }).check();
+    await recheck.check();
+    await form.getByRole('button', { name: 'Зберегти вимоги' }).click();
+    await panel.getByText(/Вимоги збережено/).waitFor();
+    assert.equal(changed, 1);
+    assert.equal(await recheck.isChecked(), true);
+  }, photoPanel);
+});
+
+test('worker can view report photos and cannot change their approval requirements', async () => {
+  await openRolePanel('worker', request => {
+    if (request.method === 'GET' && request.pathname === photoRulesPath) {
+      return { json: [defaultPhotoRules] };
+    }
+    return photoReportMock(request);
+  }, async panel => {
+    await panel.locator('#photoReport').selectOption(reportId);
+    await panel.getByText(/Фото: 0/).waitFor();
+    assert.equal(await panel.getByRole('button', { name: 'Зберегти вимоги' }).count(), 0);
+    await panel.locator('#photoUploadForm').waitFor({ state: 'visible' });
+  }, photoPanel);
 });

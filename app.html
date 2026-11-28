@@ -679,12 +679,35 @@ html body #workspace #projects #projectList>.item.compact-project .project-state
 <div id="zoneHierarchyList"></div>
 </div>
 </details>
-<div id="sbuildComms" class="sbuild-comms"><h3>Контакти та погодження</h3><p>Додайте відповідальних осіб, створюйте питання з фото та відео й отримуйте відповіді з Telegram.</p><div id="sbuildBotSetup" class="hidden"><button type="button" id="sbuildConnectBot">Підключити Telegram-бота</button></div><form id="sbuildContactForm" class="sbuild-comms-form"><h4>Додати контакт об’єкта</h4><label>Об’єкт<select id="sbuildContactProject"></select></label><label class="sbuild-contact-inline"><span>Ім’я</span><input name="name" required maxlength="120" placeholder="Ім’я контакту" aria-label="Ім’я контакту"></label><label class="sbuild-contact-inline"><span>Посада</span><select name="role" aria-label="Кому адресувати"><option value="designer">Дизайнер</option><option value="foreman">Виконроб</option><option value="director">Директор</option><option value="customer">Замовник</option><option value="architect">Архітектор</option><option value="other">Інший спеціаліст</option></select></label><label class="sbuild-contact-inline"><span>Телефон</span><input name="phone" type="tel" placeholder="+380…" maxlength="35"></label><button type="submit">＋ Додати контакт</button></form><div id="sbuildContactList"></div><form id="sbuildQuestionForm" class="sbuild-comms-form"><h4>Нове питання / погодження</h4><label>Об’єкт<select id="sbuildQuestionProject"></select></label><label>Адресат<select id="sbuildQuestionContact"></select></label><label>Тип<select name="kind"><option value="question">Питання</option><option value="approval">Погодження</option><option value="problem">Проблема / недоробка</option><option value="task">Завдання</option></select></label><label>Опис<textarea name="description" rows="3" required maxlength="4000" placeholder="Опишіть питання"></textarea></label><label>Фото, відео або PDF<input name="media" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,application/pdf" multiple></label><button type="submit">Зберегти звернення</button></form><div id="sbuildQuestionList"></div></div></section><section id="reports" class="hidden"><h2>Звіти робіт</h2><details id="sbuildControlAnalytics"><summary>Кошторис · перевитрати · чеклісти · фінансова аналітика</summary><div style="padding:12px"><label>Об'єкт<select id="controlProject"></select></label><button type="button" id="controlReload">Оновити аналітику</button><p id="controlStatus" role="status"></p><h3>Кошторисні обсяги робіт</h3><div id="controlWork"></div><h3>Ліміти матеріалів</h3><form id="controlMaterialForm"><label>Зона<select id="controlZone"></select></label><input name="material" placeholder="Матеріал" required><input name="unit" placeholder="Одиниця" required><input name="quantity" type="number" min="0" step=".001" placeholder="Планова кількість" required><button>Додати ліміт</button></form><div id="controlMaterial"></div><h3>Чекліст якості</h3><form id="controlQualityForm"><label>Спеціальність<select name="specialty"><option value="plaster">Штукатурні роботи</option><option value="drywall">Гіпсокартон</option><option value="plumbing">Сантехніка</option><option value="electrical">Електрика</option><option value="roofing">Покрівля</option><option value="painting">Малярні роботи</option><option value="tiling">Облицювання плиткою</option><option value="concrete">Бетонні роботи</option><option value="masonry">Мурування</option><option value="waterproofing">Гідроізоляція</option><option value="general">Загальнобудівельні</option></select></label><label>Назва перевірки<input name="title" maxlength="150" required></label><label>Звіт про роботу<select id="qualityReport"><option value="">Загальна перевірка</option></select></label><label>Зона<select id="qualityZone"></select></label><button>Створити чекліст</button></form><div id="controlQuality"></div><section id="controlFinanceSection" hidden><h3>Зведені фінанси об'єкта</h3><div id="controlFinance" style="white-space:pre-line"></div><p>Попередня маржа враховує затверджені роботи, нарахування працівникам і зареєстровані витрати.</p></section></div></details><details id="sbuildPhotos"><summary>Фотофіксація робіт · приховані роботи · звіт замовнику</summary><div style="padding:12px"><label>Об'єкт<select id="photoProject"></select></label><label>Звіт про виконану роботу<select id="photoReport"></select></label><form id="photoUploadForm"><label>Етап<select name="stage"><option value="before">До початку</option><option value="during">У процесі</option><option value="after">Після завершення</option><option value="hidden_before_close">Прихована робота перед закриттям</option><option value="hidden_recheck">Повторна перевірка перед закриттям</option></select></label><label>Фото<input name="photo" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" required></label><input name="note" placeholder="Коментар до фото"><button>Додати фото</button></form><h3>Вимоги до фотозвіту</h3><form id="photoRulesForm"><label><input name="before" type="checkbox" checked> Фото «до» обов'язкове</label><label><input name="after" type="checkbox" checked> Фото «після» обов'язкове</label><label><input name="hidden" type="checkbox"> Приховані роботи — фото перед закриттям</label><label><input name="recheck" type="checkbox"> Повторне фото наступного спеціаліста</label><button>Зберегти вимоги</button></form><p id="photoStatus" role="status"></p><h3>Фотографії звіту</h3><div id="photoGallery"></div><section aria-labelledby="clientReportHeading">
+<div id="sbuildComms" class="sbuild-comms"><h3>Контакти та погодження</h3><p>Додайте відповідальних осіб, створюйте питання з фото та відео й отримуйте відповіді з Telegram.</p><div id="sbuildBotSetup" class="hidden"><button type="button" id="sbuildConnectBot">Підключити Telegram-бота</button></div><form id="sbuildContactForm" class="sbuild-comms-form"><h4>Додати контакт об’єкта</h4><label>Об’єкт<select id="sbuildContactProject"></select></label><label class="sbuild-contact-inline"><span>Ім’я</span><input name="name" required maxlength="120" placeholder="Ім’я контакту" aria-label="Ім’я контакту"></label><label class="sbuild-contact-inline"><span>Посада</span><select name="role" aria-label="Кому адресувати"><option value="designer">Дизайнер</option><option value="foreman">Виконроб</option><option value="director">Директор</option><option value="customer">Замовник</option><option value="architect">Архітектор</option><option value="other">Інший спеціаліст</option></select></label><label class="sbuild-contact-inline"><span>Телефон</span><input name="phone" type="tel" placeholder="+380…" maxlength="35"></label><button type="submit">＋ Додати контакт</button></form><div id="sbuildContactList"></div><form id="sbuildQuestionForm" class="sbuild-comms-form"><h4>Нове питання / погодження</h4><label>Об’єкт<select id="sbuildQuestionProject"></select></label><label>Адресат<select id="sbuildQuestionContact"></select></label><label>Тип<select name="kind"><option value="question">Питання</option><option value="approval">Погодження</option><option value="problem">Проблема / недоробка</option><option value="task">Завдання</option></select></label><label>Опис<textarea name="description" rows="3" required maxlength="4000" placeholder="Опишіть питання"></textarea></label><label>Фото, відео або PDF<input name="media" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,application/pdf" multiple></label><button type="submit">Зберегти звернення</button></form><div id="sbuildQuestionList"></div></div></section><section id="reports" class="hidden"><h2>Звіти робіт</h2><details id="sbuildControlAnalytics"><summary>Кошторис · перевитрати · чеклісти · фінансова аналітика</summary><div style="padding:12px"><label>Об'єкт<select id="controlProject"></select></label><button type="button" id="controlReload">Оновити аналітику</button><p id="controlStatus" role="status"></p><h3>Кошторисні обсяги робіт</h3><div id="controlWork"></div><h3>Ліміти матеріалів</h3><form id="controlMaterialForm"><label>Зона<select id="controlZone"></select></label><input name="material" placeholder="Матеріал" required><input name="unit" placeholder="Одиниця" required><input name="quantity" type="number" min="0" step=".001" placeholder="Планова кількість" required><button>Додати ліміт</button></form><div id="controlMaterial"></div><h3>Чекліст якості</h3><form id="controlQualityForm"><label>Спеціальність<select name="specialty"><option value="plaster">Штукатурні роботи</option><option value="drywall">Гіпсокартон</option><option value="plumbing">Сантехніка</option><option value="electrical">Електрика</option><option value="roofing">Покрівля</option><option value="painting">Малярні роботи</option><option value="tiling">Облицювання плиткою</option><option value="concrete">Бетонні роботи</option><option value="masonry">Мурування</option><option value="waterproofing">Гідроізоляція</option><option value="general">Загальнобудівельні</option></select></label><label>Назва перевірки<input name="title" maxlength="150" required></label><label>Звіт про роботу<select id="qualityReport"><option value="">Загальна перевірка</option></select></label><label>Зона<select id="qualityZone"></select></label><button>Створити чекліст</button></form><div id="controlQuality"></div><section id="controlFinanceSection" hidden><h3>Зведені фінанси об'єкта</h3><div id="controlFinance" style="white-space:pre-line"></div><p>Попередня маржа враховує затверджені роботи, нарахування працівникам і зареєстровані витрати.</p><details id="projectLedger" class="sbuild-department-fold">
+<summary>Розрахунки із замовником і транспорт</summary>
+<div>
+<p>Заносьте погоджені нарахування та фактичні платежі. Нарахування не додаються автоматично із звітів про роботи. Транспорт у цьому журналі не змінює маржу вище.</p>
+<ul id="projectLedgerSummary"></ul>
+<form id="projectLedgerForm">
+<fieldset disabled>
+<legend>Новий запис</legend>
+<div class="grid">
+<label>Операція<select name="kind" required></select></label>
+<label>Дата<input name="occurredOn" type="date" required></label>
+<label>Сума, грн<input name="amount" inputmode="decimal" required maxlength="17"></label>
+<label>Опис<input name="description" required maxlength="240"></label>
+</div>
+<button type="submit">Записати операцію</button>
+</fieldset>
+</form>
+<p id="projectLedgerStatus" role="status"></p>
+<button id="projectLedgerReload" type="button">Оновити журнал</button>
+<ol id="projectLedgerHistory"></ol>
+<button id="projectLedgerMore" type="button" hidden>Показати ще</button>
+</div>
+</details></section></div></details><details id="sbuildPhotos"><summary>Фотофіксація робіт · приховані роботи · звіт замовнику</summary><div style="padding:12px"><label>Об'єкт<select id="photoProject"></select></label><label>Звіт про виконану роботу<select id="photoReport"></select></label><form id="photoUploadForm"><label>Етап<select name="stage"><option value="before">До початку</option><option value="during">У процесі</option><option value="after">Після завершення</option><option value="hidden_before_close">Прихована робота перед закриттям</option><option value="hidden_recheck">Повторна перевірка перед закриттям</option></select></label><label>Фото<input name="photo" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" required></label><input name="note" placeholder="Коментар до фото"><button>Додати фото</button></form><h3>Вимоги до фотозвіту</h3><form id="photoRulesForm" class="hidden"><label><input name="before" type="checkbox" checked> Фото «до» обов'язкове</label><label><input name="after" type="checkbox" checked> Фото «після» обов'язкове</label><label><input name="hidden" type="checkbox"> Приховані роботи — фото перед закриттям</label><label><input name="recheck" type="checkbox"> Повторне фото наступного спеціаліста</label><button>Зберегти вимоги</button></form><p id="photoStatus" role="status"></p><h3>Фотографії звіту</h3><div id="photoGallery"></div><section aria-labelledby="clientReportHeading">
 <h3 id="clientReportHeading">Тижневий звіт замовнику</h3>
 <label>Початок періоду<input id="clientWeek" type="date"></label>
 <button id="clientReportBuild" type="button">Сформувати звіт</button>
 <button id="clientReportPrint" type="button" disabled>Друкувати / PDF</button>
 <button id="clientReportCsv" type="button" disabled>Завантажити CSV</button>
+<button id="clientReportXlsx" type="button" disabled>Завантажити Excel</button>
 <p id="clientReportStatus" role="status"></p>
 <div id="clientReportResult"></div>
 <div id="clientReportPhotos"></div>
@@ -695,6 +718,7 @@ html body #workspace #projects #projectList>.item.compact-project .project-state
 <button id="assignmentReload" type="button">Оновити завдання</button>
 <form id="assignmentForm" class="hidden">
 <label>Назва роботи<input name="title" required maxlength="150"></label>
+<label>Технологія виконання роботи<textarea name="instruction_text" required maxlength="4000"></textarea></label>
 <label>Зона<select name="zone_id" required></select></label>
 <label>Виконавець<select name="assigned_to" required></select></label>
 <label>Строк виконання<input name="due_on" type="date"></label>
@@ -722,12 +746,16 @@ html body #workspace #projects #projectList>.item.compact-project .project-state
 <div style="overflow-x:auto"><table><thead><tr><th>Погоджено</th><th>Позиція</th><th>Обсяг</th><th>Одиниця</th><th>Виконавець</th><th>Замовник</th><th>Джерело</th></tr></thead><tbody id="pdfEstimateRows"></tbody></table></div>
 <details><summary>Розміри та позначення для перевірки</summary><pre id="pdfEstimateReferences" style="white-space:pre-wrap"></pre></details>
 <div class="grid"><button type="button" id="exportPdfWorkerEstimate">Кошторис виконавця · CSV</button><button type="button" id="exportPdfCustomerEstimate">Кошторис замовника · CSV</button></div>
+<div class="grid"><button type="button" id="exportPdfWorkerXlsx">Кошторис виконавця · Excel</button><button type="button" id="exportPdfCustomerXlsx">Кошторис замовника · Excel</button></div>
+<div class="grid"><button type="button" id="printPdfWorkerEstimate">Кошторис виконавця · PDF</button><button type="button" id="printPdfCustomerEstimate">Кошторис замовника · PDF</button></div>
 </details></section></div></main><script type="module">
 import {openPdfPreview,httpsUrl,isStorageObjectPath,signedStorageUrl} from "./modules/upload-safety.js";
 import {fetchProjectContacts} from "./modules/project-contacts.js";
 import {createClient} from "https://esm.sh/@supabase/supabase-js@2.119.2";
-import { buildClientReport, canAttachClientPhoto, clientPhotoCaption, clientReportCsv, renderClientReport, reportWeek } from "./modules/client-report.js";
+import { buildClientReport, canAttachClientPhoto, clientPhotoCaption, clientReportCsv, clientReportRows, renderClientReport, reportWeek } from "./modules/client-report.js";
 import { summarizeProjectFinance } from "./modules/estimate-finance.js";
+import {downloadSpreadsheet,spreadsheetBlob} from "./modules/spreadsheet.js";
+import { mountProjectLedger } from "./modules/project-finance-ledger.js";
 import {createInventoryOperation} from "./modules/inventory-operation.js";
 import {templates as specialtyTemplates} from "./modules/quality-templates.js";
 import {mountZoneHierarchy} from "./modules/zone-hierarchy.js";
@@ -746,9 +774,10 @@ async function readProjectRows(query){
  }
 }
 
-let user=null,profile=null,projects=[];const inviteToken=new URLSearchParams(location.hash.slice(1)).get("invite");if(inviteToken)$("joinHint").textContent="Ви отримали запрошення S-BUILD. Увійдіть або створіть обліковий запис, потім надішліть заявку на приєднання.";
+let user=null,profile=null,projects=[];
+let refreshMaterials=()=>{};const inviteToken=new URLSearchParams(location.hash.slice(1)).get("invite");if(inviteToken)$("joinHint").textContent="Ви отримали запрошення S-BUILD. Увійдіть або створіть обліковий запис, потім надішліть заявку на приєднання.";
 const err=e=>{const m=e?.message||String(e);status("Помилка: "+(m==="Invalid login credentials"?"Невірний email або пароль. Якщо ви ще не реєструвалися, натисніть «Створити обліковий запис працівника».":m))};
-async function refresh(){const {data:{user:u}}=await sb.auth.getUser();if(u?.id!==user?.id){workAssignments.reset();zoneHierarchy.reset();$("sbuildControlAnalytics").open=false;profile=null}user=u;$("auth").classList.toggle("hidden",!!u);$("workspace").classList.toggle("hidden",!u);if(!u){status("Увійдіть для роботи");return}const p=await sb.from("sbuild_profiles").select("full_name,role,active").eq("user_id",u.id).maybeSingle();profile=p.data;$("identity").textContent=profile?.active?profile.full_name+" · "+({owner:"Директор",worker:"Працівник",brigadier:"Бригадир",foreman:"Виконроб",accountant:"Бухгалтер"}[profile.role]||profile.role):"Обліковий запис очікує підтвердження адміністратором";$("projectForm").classList.add("hidden");status("Підключено до Supabase");await loadProjects();await loadReports();updateDashboard();if(inviteToken&&!profile?.active){document.querySelector('[data-tab="invite"]').click();$("redeemForm").querySelector('input[name="code"]').value=inviteToken;status("Запрошення отримано. Введіть ім’я та натисніть «Надіслати заявку»")}}
+async function refresh(){const {data:{user:u}}=await sb.auth.getUser();if(u?.id!==user?.id){workAssignments.reset();zoneHierarchy.reset();$("sbuildControlAnalytics").open=false;profile=null}user=u;$("auth").classList.toggle("hidden",!!u);$("workspace").classList.toggle("hidden",!u);if(!u){status("Увійдіть для роботи");return}const p=await sb.from("sbuild_profiles").select("full_name,role,active").eq("user_id",u.id).maybeSingle();profile=p.data;$("identity").textContent=profile?.active?profile.full_name+" · "+({owner:"Директор",worker:"Працівник",brigadier:"Бригадир",foreman:"Виконроб",accountant:"Бухгалтер"}[profile.role]||profile.role):"Обліковий запис очікує підтвердження адміністратором";$("projectForm").classList.add("hidden");status("Підключено до Supabase");await loadProjects();refreshMaterials();await loadReports();updateDashboard();if(inviteToken&&!profile?.active){document.querySelector('[data-tab="invite"]').click();$("redeemForm").querySelector('input[name="code"]').value=inviteToken;status("Запрошення отримано. Введіть ім’я та натисніть «Надіслати заявку»")}}
 async function loadProjects(){const {data,error}=await sb.from("sbuild_projects").select("id,name,address,status").order("created_at",{ascending:false});if(error)return err(error);projects=data||[];updateDashboard();const list=$("projectList");list.replaceChildren();for(const p of projects){const card=document.createElement("article");card.className="sbuild-project-row";const copy=document.createElement("div");copy.className="sbuild-project-copy";const title=document.createElement("strong");title.className="sbuild-project-title";title.textContent=p.name;const address=document.createElement("div");address.className="sbuild-project-address";address.textContent=p.address||"Адресу не вказано";copy.append(title,address);const state=document.createElement("div");state.className="sbuild-project-status";state.textContent=p.status==="active"?"Активний":p.status;card.append(copy,state);if(profile?.role==="owner"){const button=document.createElement("button");button.type="button";button.className="sbuild-project-edit";button.textContent="✎ Редагувати";button.onclick=async()=>{const name=prompt("Назва об’єкта",p.name);if(name===null)return;const address=prompt("Адреса об’єкта",p.address||"");if(address===null)return;const n=name.trim(),ad=address.trim();if(!n||n.length>120||ad.length>180)return err("Перевірте назву та адресу");const {error}=await sb.from("sbuild_projects").update({name:n,address:ad}).eq("id",p.id);if(error)return err(error);status("Об’єкт оновлено");await loadProjects()};card.append(button)}list.append(card)}for(const id of ["reportProject","inviteProject"]){let select=$(id);select.querySelectorAll("option[data-project]").forEach(x=>x.remove());projects.forEach(p=>{let option=document.createElement("option");option.value=p.id;option.textContent=p.name;option.dataset.project="1";select.append(option)})}}
 async function loadReports(){const {data,error}=await sb.from("sbuild_work_reports").select("id,project_id,zone_id,worker_id,description,quantity,unit,status,work_date,worker_rate,client_rate").order("created_at",{ascending:false}).limit(50);if(error)return err(error);window.sbuildReportCount=(data||[]).length;window.sbuildPendingCount=(data||[]).filter(r=>r.status==="submitted"||r.status==="foreman_approved").length;updateDashboard();$("reportList").replaceChildren(...(data||[]).map(r=>{const d=document.createElement("div");d.className="item";const t=document.createElement("span");t.textContent=r.work_date+" · "+r.description+" · "+r.quantity+" "+r.unit+(r.worker_rate!=null?" · Робітнику "+(Number(r.quantity)*Number(r.worker_rate)).toFixed(2)+" грн":"")+(r.client_rate!=null?" · Замовнику "+(Number(r.quantity)*Number(r.client_rate)).toFixed(2)+" грн":"")+" · "+({submitted:"Подано на погодження",foreman_approved:"Погоджено виконробом",owner_approved:"Затверджено директором",returned:"Повернуто на виправлення"}[r.status]||r.status);d.append(t);const owner=profile?.role==="owner",manager=["owner","foreman","technical_director"].includes(profile?.role);if(manager&&r.status!=="owner_approved"){const edit=document.createElement("button");edit.textContent="Редагувати";edit.onclick=async()=>{const desc=prompt("Вид робіт",r.description);if(desc===null)return;const qty=prompt("Кількість",String(r.quantity));if(qty===null)return;const q=Number(qty.replace(",","."));if(!desc.trim()||!Number.isFinite(q)||q<=0)return err("Невірні дані");const {error}=await sb.from("sbuild_work_reports").update({description:desc.trim(),quantity:q,status:"submitted",foreman_approved_by:null,owner_approved_by:null}).eq("id",r.id);if(error)return err(error);await loadReports();status("Звіт виправлено")};d.append(" ",edit)}if(manager&&r.status==="submitted"){const b=document.createElement("button");b.textContent="Погодити виконробом";b.onclick=async()=>{const {error}=await sb.from("sbuild_work_reports").update({status:"foreman_approved",foreman_approved_by:user.id}).eq("id",r.id).eq("status","submitted");if(error)return err(error);await loadReports();status("Перший етап погоджено")};d.append(" ",b)}if(owner&&r.status==="foreman_approved"){const b=document.createElement("button");b.textContent="Затвердити директором";b.onclick=async()=>{if(!confirm("Остаточно затвердити звіт?"))return;const {error}=await sb.from("sbuild_work_reports").update({status:"owner_approved",owner_approved_by:user.id}).eq("id",r.id).eq("status","foreman_approved");if(error)return err(error);await loadReports();status("Звіт затверджено директором")};d.append(" ",b)}return d}))}
 
@@ -1399,8 +1428,10 @@ sbuildCompactDepartmentNavigation();
 (function(){
 const e=id=>document.getElementById(id),m=e("matStatus");
 const fill=(id,rows,placeholder)=>{const x=e(id),old=x.value;x.replaceChildren();if(placeholder)x.add(new Option(placeholder,""));for(const r of rows)x.add(new Option(r.name,r.id));if([...x.options].some(o=>o.value===old))x.value=old;};
+let version=0;
 async function load(){
- if(!user||!projects.length)return;
+ const current=++version,actor=user?.id;
+ if(!actor||!projects.length)return;
  fill("matProject",projects);const pid=e("matProject").value;
  const canReadExpenses=profile?.active&&profile.role==="owner";
  const skipped=Promise.resolve({data:null,error:null});
@@ -1413,6 +1444,7 @@ async function load(){
  canReadExpenses?sb.from("sbuild_project_expense_totals").select("amount").eq("project_id",pid).maybeSingle():skipped,
  canReadExpenses?sb.from("sbuild_material_budgets").select("budget_amount").eq("project_id",pid).maybeSingle():skipped
  ]);
+ if(current!==version||actor!==user?.id||pid!==e("matProject").value)return;
  const bad=[z,r,inv,bal].find(v=>v.error);if(bad){m.textContent=bad.error.message;return}
  fill("matZone",z.data||[],"Оберіть зону");fill("matDest",projects.filter(p=>p.id!==pid),"Інший об'єкт");fill("matMoveRequest",(r.data||[]).filter(q=>["approved","ordered","delivered"].includes(q.status)).map(q=>({id:q.id,name:q.material_name+" · "+q.quantity+" "+q.unit+" ("+q.status+")"})),"Без заявки");
  const requests=e("matRequests");requests.replaceChildren();
@@ -1476,7 +1508,8 @@ async function uploadReceipt(file,project){
 }
 e("matProject").onchange=()=>load().catch(x=>m.textContent=x.message);
 e("matReload").onclick=()=>load().catch(x=>m.textContent=x.message);
-e("sbuildMaterials").addEventListener("toggle",()=>{if(e("sbuildMaterials").open)load().catch(x=>m.textContent=x.message)});
+refreshMaterials=()=>{if(e("sbuildMaterials").open)load().catch(error=>m.textContent=error.message)};
+e("sbuildMaterials").addEventListener("toggle",refreshMaterials);
 e("matRequestForm").onsubmit=async ev=>{ev.preventDefault();const f=ev.currentTarget,d=new FormData(f);if(!e("matZone").value){m.textContent="Оберіть зону";return}
 const x=await sb.from("sbuild_material_requests").insert({project_id:e("matProject").value,zone_id:e("matZone").value,work_type:d.get("work"),material_name:d.get("material"),unit:d.get("unit"),quantity:Number(d.get("qty")),requested_by:user.id,status:"requested"});m.textContent=x.error?.message||"Заявку створено";if(!x.error){f.reset();load()}};
 const recordInventory=createInventoryOperation(payload=>sb.rpc("sbuild_record_inventory_once",payload));
@@ -1565,19 +1598,44 @@ const e=id=>document.getElementById(id),msg=e("photoStatus");
 const iso=d=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-");
 const now=new Date(),monday=new Date(now);monday.setDate(now.getDate()-(now.getDay()+6)%7);e("clientWeek").value=iso(monday);
 const fill=(id,items,placeholder)=>{const x=e(id),old=x.value;x.replaceChildren();if(placeholder)x.add(new Option(placeholder,""));for(const item of items)x.add(new Option(item.name,item.id));if([...x.options].some(o=>o.value===old))x.value=old};
-let reports=[],photoUrls=[];
+let reports=[];
+let reportRequest=0,photoRequest=0;
+const ruleForm=e("photoRulesForm");
+function updateRecheck(){
+ const hidden=ruleForm.elements.hidden.checked;
+ ruleForm.elements.recheck.disabled=!hidden;
+ if(!hidden)ruleForm.elements.recheck.checked=false;
+}
+ruleForm.elements.hidden.addEventListener("change",updateRecheck);
 async function load(){
- if(!user||!projects.length)return;fill("photoProject",projects);const pid=e("photoProject").value;
+ if(!user||!projects.length)return;
+ const request=++reportRequest,actor=user.id;
+ fill("photoProject",projects);const pid=e("photoProject").value;
+ e("photoReport").disabled=true;
+ ruleForm.classList.add("hidden");
  const res=await sb.from("sbuild_work_reports").select("id,zone_id,description,work_date,status,quantity,unit,client_rate").eq("project_id",pid).order("work_date",{ascending:false}).limit(200);
- if(res.error){msg.textContent=res.error.message;return}reports=res.data||[];
+ if(actor!==user?.id||request!==reportRequest||pid!==e("photoProject").value)return;
+ e("photoReport").disabled=false;
+ if(res.error){reports=[];fill("photoReport",[],"Оберіть роботу");msg.textContent=res.error.message;return}
+ reports=res.data||[];
  fill("photoReport",reports.map(r=>({id:r.id,name:r.work_date+" · "+r.description+" · "+r.status})),"Оберіть роботу");
  await loadPhotos();
 }
 async function loadPhotos(){
- const rid=e("photoReport").value,gal=e("photoGallery");gal.replaceChildren();if(!rid)return;
+ const request=++photoRequest,actor=user?.id,pid=e("photoProject").value;
+ const rid=e("photoReport").value,gal=e("photoGallery");
+ gal.replaceChildren();ruleForm.classList.add("hidden");
+ if(!rid||!actor)return;
  const [p,req]=await Promise.all([sb.from("sbuild_work_photos").select("id,stage,storage_path,note,created_at").eq("report_id",rid).order("created_at"),sb.from("sbuild_work_photo_requirements").select("*").eq("report_id",rid).maybeSingle()]);
+ if(request!==photoRequest||actor!==user?.id||pid!==e("photoProject").value||rid!==e("photoReport").value)return;
  if(p.error||req.error){msg.textContent=p.error?.message||req.error?.message;return}
- if(req.data){const form=e("photoRulesForm");form.elements.before.checked=req.data.required_before;form.elements.after.checked=req.data.required_after;form.elements.hidden.checked=req.data.hidden_work;form.elements.recheck.checked=req.data.requires_recheck}
+ const selected=reports.find(report=>report.id===rid);
+ ruleForm.classList.toggle("hidden",!selected||selected.status==="owner_approved"||!["owner","foreman"].includes(profile?.role));
+ ruleForm.elements.before.checked=req.data?.required_before??true;
+ ruleForm.elements.after.checked=req.data?.required_after??true;
+ ruleForm.elements.hidden.checked=req.data?.hidden_work??false;
+ ruleForm.elements.recheck.checked=req.data?.requires_recheck??false;
+ updateRecheck();
  const stages=new Set((p.data||[]).map(x=>x.stage));
  msg.textContent="Фото: "+(p.data||[]).length+" · До: "+(stages.has("before")?"так":"ні")+" · Після: "+(stages.has("after")?"так":"ні")+" · Приховані: "+(stages.has("hidden_before_close")?"так":"ні");
  for(const photo of p.data||[]){const div=document.createElement("div");div.className="item";const label=document.createElement("span");label.textContent=photo.stage+" · "+(photo.note||"");div.append(label);
@@ -1593,10 +1651,30 @@ const up=await sb.storage.from("sbuild-work-photos").upload(path,file,{contentTy
 const result=await sb.from("sbuild_work_photos").insert({project_id:e("photoProject").value,report_id:rid,zone_id:r.zone_id,uploaded_by:user.id,stage:d.get("stage"),storage_path:path,note:String(d.get("note")||"")});
 msg.textContent=result.error?"Фото завантажено, але запис не створено: "+result.error.message:"Фото збережено";if(!result.error){form.reset();loadPhotos()}
 };
-e("photoRulesForm").onsubmit=async ev=>{ev.preventDefault();const rid=e("photoReport").value;if(!rid){msg.textContent="Оберіть роботу";return}const d=new FormData(ev.currentTarget);const x=await sb.from("sbuild_work_photo_requirements").insert({report_id:rid,required_before:d.has("before"),required_after:d.has("after"),hidden_work:d.has("hidden"),requires_recheck:d.has("recheck")});msg.textContent=x.error?.message||"Вимоги збережено";if(!x.error)loadPhotos()};
+ruleForm.onsubmit=async ev=>{
+ ev.preventDefault();
+ const actor=user?.id,rid=e("photoReport").value,pid=e("photoProject").value;
+ const report=reports.find(row=>row.id===rid);
+ if(!actor||!report||report.status==="owner_approved"||!["owner","foreman"].includes(profile?.role))return;
+ const button=ruleForm.querySelector("button"),data=new FormData(ruleForm);
+ button.disabled=true;
+ try{
+  const {error}=await sb.rpc("sbuild_set_work_photo_requirements",{
+   p_report_id:rid,p_required_before:data.has("before"),p_required_after:data.has("after"),
+   p_hidden_work:data.has("hidden"),p_requires_recheck:data.has("recheck")
+  });
+  if(actor!==user?.id||pid!==e("photoProject").value||rid!==e("photoReport").value)return;
+  if(error){msg.textContent=error.message;return}
+  await loadPhotos();
+  if(actor===user?.id&&pid===e("photoProject").value&&rid===e("photoReport").value){
+   msg.textContent="Вимоги збережено · "+msg.textContent;
+  }
+ }catch{if(actor===user?.id&&rid===e("photoReport").value)msg.textContent="Не вдалося зберегти вимоги до фото"}
+ finally{button.disabled=false}
+};
 const clientResult=e("clientReportResult"),clientStatus=e("clientReportStatus");
 const clientBuild=e("clientReportBuild"),clientPrint=e("clientReportPrint"),clientPhotos=e("clientReportPhotos");
-const clientCsv=e("clientReportCsv");
+const clientCsv=e("clientReportCsv"),clientXlsx=e("clientReportXlsx");
 let clientVersion=0,clientReport=null;
 const selectedPhotos=new Map();
 const clientPhotoUrls=new Set();
@@ -1606,6 +1684,7 @@ function clearClientReport(){
  clientReport=null;
  clientPrint.disabled=true;
  clientCsv.disabled=true;
+ clientXlsx.disabled=true;
  clientStatus.textContent="";
  clientResult.replaceChildren();
  clientPhotos.replaceChildren();
@@ -1709,6 +1788,7 @@ clientBuild.onclick=async()=>{
   renderClientPreview();
   clientPrint.disabled=false;
   clientCsv.disabled=!clientReport.groups.length;
+  clientXlsx.disabled=clientCsv.disabled;
 
   const included=new Map(clientReport.groups.flatMap(([,rows])=>rows.map(row=>[row.id,row])));
   if(!included.size)return;
@@ -1745,6 +1825,17 @@ clientCsv.onclick=()=>{
  setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
 
+clientXlsx.onclick=async()=>{
+ if(!clientReport?.groups.length||profile?.role!=="owner"||!profile.active)return;
+ const version=clientVersion,report=clientReport;
+ clientXlsx.disabled=true;
+ try{
+  const file=await spreadsheetBlob(clientReportRows(report));
+  if(version===clientVersion)downloadSpreadsheet(file,"sbuild-zvit-"+report.period.start);
+ }catch(error){if(version===clientVersion)clientStatus.textContent=error.message}
+ finally{if(version===clientVersion)clientXlsx.disabled=false}
+};
+
 clientPrint.onclick=async()=>{
  if(!clientReport||profile?.role!=="owner"||!profile.active)return;
  const preview=window.open("","_blank");
@@ -1766,10 +1857,12 @@ clientPrint.onclick=async()=>{
 (function(){
 const e=id=>document.getElementById(id),message=e("controlStatus");
 const finance=e("controlFinance"),financeSection=e("controlFinanceSection");
+const ledger=mountProjectLedger(sb,()=>Boolean(user&&profile?.active&&profile.role==="owner"),()=>e("controlProject").value);
 const money=n=>n===null?"Недоступно":n.toLocaleString("uk-UA",{minimumFractionDigits:2,maximumFractionDigits:2})+" грн";
 let analyticsVersion=0;
 e("logout").addEventListener("click",()=>{
  analyticsVersion++;
+ ledger.clear();
  finance.textContent="";
  financeSection.hidden=true;
 });
@@ -1796,6 +1889,7 @@ async function load(){
  if(!user||!projects.length){if(owner)finance.textContent="Немає об’єктів.";return}
  if(owner)finance.textContent="Завантаження…";
  fill("controlProject",projects);const pid=e("controlProject").value;
+ if(e("projectLedger").open)void ledger.load();
  availableQualityReports.clear();
  form.querySelector("button").disabled=true;
  const financialData=owner?Promise.all([
@@ -1892,11 +1986,16 @@ const zoneHierarchy=mountZoneHierarchy({
 const workAssignments=mountWorkAssignments({
   sb, panel:$("sbuildAssignments"), getState:()=>({user,profile,projects}),
   async prepareReport(task){
+    const actor=user?.id;
+    const assignments=$("sbuildAssignments");
     const form=$("reportForm");
     $("reportProject").value=task.project_id;
     await sbuildLoadReportZones();
+    if(actor!==user?.id||!assignments.open||$("reports").classList.contains("hidden"))return;
     $("reportZone").value=task.zone_id;
+    if($("reportZone").value!==task.zone_id)throw Error("Зона завдання недоступна");
     form.elements.description.value=task.title;
+    assignments.open=false;
     const fold=form.closest("details");
     if(fold)fold.open=true;
     form.elements.description.focus();

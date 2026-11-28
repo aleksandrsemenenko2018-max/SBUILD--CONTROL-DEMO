@@ -137,14 +137,20 @@ function csvCell(value) {
   return '"' + safe.replaceAll('"', '""') + '"';
 }
 
-export function clientReportCsv(report) {
+export function clientReportRows(report) {
   const rows = [['Об’єкт', 'Початок тижня', 'Кінець тижня', 'Зона', 'Дата роботи',
     'Опис роботи', 'Кількість', 'Одиниця', 'Вартість, UAH']];
   for (const [zone, work] of report.groups) {
     for (const row of work) {
       rows.push([report.project, report.period.start, report.period.end, zone, row.date,
-        row.description, row.quantity, row.unit, row.subtotal === null ? '' : (row.subtotal / 100).toFixed(2)]);
+        row.description, row.quantity, row.unit, row.subtotal === null ? '' : row.subtotal / 100]);
     }
   }
-  return '\uFEFF' + rows.map(row => row.map(csvCell).join(',')).join('\r\n') + '\r\n';
+  return rows;
+}
+
+export function clientReportCsv(report) {
+  return '\uFEFF' + clientReportRows(report).map((row, index) => row.map((value, col) =>
+    csvCell(index && col === 8 && typeof value === 'number' ? value.toFixed(2) : value)
+  ).join(',')).join('\r\n') + '\r\n';
 }

@@ -82,7 +82,10 @@ export function estimateCsv(rows) {
     const text = typeof value === 'string' && /^[\s\uFEFF]*[=+\-@\t\r\n]/u.test(raw) ? "'" + raw : raw;
     return '"' + text.replaceAll('"', '""') + '"';
   };
+  return '\ufeff' + estimateRows(rows).map(row => row.map(cell).join(';')).join('\r\n');
+}
+
+export function estimateRows(rows) {
   const header = ['Позиція', 'Одиниця', 'Обсяг', 'Розцінка', 'Сума', 'Сторінка'];
-  return '\ufeff' + [header, ...rows.map(row => [row.label, row.unit, row.quantity, row.rate, row.amount, row.page])]
-    .map(row => row.map(cell).join(';')).join('\r\n');
+  return [header, ...rows.map(row => [row.label, row.unit, row.quantity, row.rate, row.amount, row.page])];
 }

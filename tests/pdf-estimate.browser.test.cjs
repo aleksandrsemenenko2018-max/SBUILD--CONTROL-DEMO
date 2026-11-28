@@ -1,3 +1,4 @@
+const { sheetXml } = require('./spreadsheet-fixture.cjs');
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
 const { launchBrowser, openPage, siteOrigin } = require('./browser-fixture.cjs');
@@ -62,6 +63,20 @@ test('extracts text from a real PDF and exports only reviewed customer rates', a
       const chunks = [];
       for await (const chunk of stream) chunks.push(chunk);
       assert.match(Buffer.concat(chunks).toString('utf8'), /"Painting";"м²";"12";"15";"180";"1"/);
+      const [xlsx] = await Promise.all([
+        page.waitForEvent('download'), page.locator('#exportPdfCustomerXlsx').click()
+      ]);
+      assert.equal(xlsx.suggestedFilename(), 'sbuild-estimate-customer.xlsx');
+      const sheet = await sheetXml(xlsx);
+      assert.match(sheet, /<v>180<\/v>/);
+      assert.doesNotMatch(sheet, /<v>3<\/v>/);
+      const [preview] = await Promise.all([
+        page.waitForEvent('popup'), page.locator('#printPdfCustomerEstimate').click()
+      ]);
+      await preview.getByRole('heading', { name: 'Кошторис замовника' }).waitFor();
+      assert.equal((await preview.pdf()).subarray(0, 4).toString(), '%PDF');
+      assert.match(await preview.locator('table').innerText(), /Painting.*180/s);
+      await preview.close();
       flow.assertClean();
     } finally {
       await flow.context.close();

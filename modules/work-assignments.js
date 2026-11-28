@@ -137,9 +137,38 @@ export function mountWorkAssignments({ sb, panel, getState, prepareReport }) {
     const worker = roster.get(task.assigned_to);
     description.textContent = [zone, statusLabels[status], worker, task.due_on].filter(Boolean).join(' · ');
     row.append(title, description);
+    if (task.instruction_text) {
+      const details = document.createElement('details');
+      const summary = document.createElement('summary');
+      summary.textContent = 'Технологія виконання';
+      const instruction = document.createElement('p');
+      instruction.style.whiteSpace = 'pre-wrap';
+      instruction.textContent = task.instruction_text;
+      details.append(summary, instruction);
+      if (task.acknowledgement) {
+        const signed = document.createElement('p');
+        signed.textContent = 'Ознайомлення підтверджено · ' +
+          new Date(task.acknowledgement.acknowledged_at).toLocaleString('uk-UA');
+        details.append(signed);
+      } else if (task.assigned_to === user.id && task.status === 'assigned') {
+        action(details, 'Підтвердити ознайомлення', async () => {
+          const projectId = project.value;
+          const { error } = await sb.from('sbuild_work_assignment_acknowledgements')
+            .insert({ assignment_id: task.id });
+          if (project.value !== projectId || getState().user?.id !== user.id) return;
+          if (error && error.code !== '23505') {
+            feedback.textContent = error.message;
+            return;
+          }
+          await reload();
+        });
+      }
+      row.append(details);
+    }
 
     if (task.assigned_to === user.id) {
-      if (task.status === 'assigned' || status === 'returned') {
+      const readyToStart = task.status === 'assigned' && (!task.instruction_text || task.acknowledgement);
+      if (readyToStart || status === 'returned') {
         action(row, status === 'returned' ? 'Повернути в роботу' : 'Почати роботу',
           () => changeStatus(task, 'in_progress', null));
       }
@@ -185,7 +214,9 @@ export function mountWorkAssignments({ sb, panel, getState, prepareReport }) {
     feedback.textContent = 'Завантаження…';
     const [tasks, zoneRows, rosterRows, reports] = await Promise.all([
       sb.from(table)
-        .select('id,project_id,zone_id,assigned_to,title,due_on,status,report_id,report:sbuild_work_reports!sbuild_work_assignments_report_id_fkey(status)')
+        .select('id,project_id,zone_id,assigned_to,title,due_on,status,report_id,instruction_text,' +
+          'report:sbuild_work_reports!sbuild_work_assignments_report_id_fkey(status),' +
+          'acknowledgement:sbuild_work_assignment_acknowledgements(acknowledged_at)')
         .eq('project_id', projectId).order('created_at', { ascending: false }).limit(100),
       sb.from('sbuild_zones').select('id,name,parent_id').eq('project_id', projectId).order('name'),
       manager ? sb.rpc('sbuild_work_assignment_roster', { p_project_id: projectId }) : { data: [] },
@@ -227,7 +258,8 @@ export function mountWorkAssignments({ sb, panel, getState, prepareReport }) {
     const projectId = project.value;
     try {
       const { error } = await sb.from(table).insert({
-        ...values, project_id: projectId, title: values.title.trim(), due_on: values.due_on || null,
+        ...values, project_id: projectId, title: values.title.trim(),
+        instruction_text: values.instruction_text.trim(), due_on: values.due_on || null,
       });
       if (projectId !== project.value || user?.id !== getState().user?.id) return;
       if (error) feedback.textContent = error.message;

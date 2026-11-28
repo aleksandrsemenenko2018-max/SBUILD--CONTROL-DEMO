@@ -1,3 +1,4 @@
+const { sheetXml } = require('./spreadsheet-fixture.cjs');
 const assert = require('node:assert/strict');
 const { readFile } = require('node:fs/promises');
 const { test } = require('node:test');
@@ -102,6 +103,15 @@ test('prints only approved client work and explicitly selected photos', async ()
     const contents = await readFile(await csv.path(), 'utf8');
     assert.match(contents, /<strong>Оздоблення<\/strong>.*250\.00/);
     assert.doesNotMatch(contents, /PRIVATE|9999|before\.png/);
+    const excel = page.waitForEvent('download');
+    await page.locator('#clientReportXlsx').click();
+    const workbook = await excel;
+    assert.equal(workbook.suggestedFilename(), 'sbuild-zvit-2026-11-23.xlsx');
+    const sheet = await sheetXml(workbook);
+    assert.match(sheet, /&lt;strong&gt;Оздоблення&lt;\/strong&gt;/);
+    assert.match(sheet, /<v>250<\/v>/);
+    assert.doesNotMatch(sheet, /PRIVATE|9999|before\.png/);
+
     assert.ok(!seen.some(item => item.pathname === '/rest/v1/sbuild_expenses'));
     assert.equal(seen.filter(item => item.pathname.startsWith('/storage/v1/')).length, 1);
     await page.locator('#clientWeek').fill('2026-11-24');
@@ -128,7 +138,7 @@ test('shows private finance summary only for an active owner', async () => {
     const worker = await openPage(browser, args => mock(args, 'worker'));
     await signIn(worker.page);
     await worker.page.locator('[data-tab="reports"]').click();
-    await worker.page.locator('#sbuildControlAnalytics summary').click();
+    await worker.page.locator('#sbuildControlAnalytics > summary').click();
     await worker.page.locator('#controlMaterial').filter({ hasText: 'Ліміти матеріалів не встановлено.' }).waitFor();
     assert.ok(await worker.page.locator('#controlFinanceSection').isHidden());
     assert.ok(!worker.seen.some(({ pathname }) =>

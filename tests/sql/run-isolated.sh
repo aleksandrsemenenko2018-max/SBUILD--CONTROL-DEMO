@@ -21,8 +21,12 @@ run_suite sbuild_warehouse_test tests/sql/warehouse-fixture.sql \
 run_suite sbuild_work_assignment_test tests/sql/work-assignments-fixture.sql \
   supabase/staged/work_assignments.sql tests/sql/work-assignments.sql \
   supabase/staged/zone_hierarchy.sql tests/sql/zone-hierarchy.sql \
-  tests/sql/quality-report-link-fixture.sql supabase/staged/quality_report_link.sql tests/sql/quality-report-link.sql
+  tests/sql/quality-report-link-fixture.sql supabase/staged/quality_report_link.sql tests/sql/quality-report-link.sql \
+  tests/sql/work-instruction-fixture.sql supabase/staged/work_instruction_acknowledgement.sql tests/sql/work-instruction.sql \
+  tests/sql/photo-requirements-fixture.sql supabase/staged/photo_requirements_control.sql tests/sql/photo-requirements.sql
 run_suite sbuild_communications_test tests/sql/communications-setup.sql \
   supabase/migrations/20261127230500_scope_project_communications.sql \
   supabase/migrations/20261127230501_protect_telegram_contact_tokens.sql tests/sql/communications-assertions.sql \
   supabase/migrations/20261127231500_reconcile_telegram_delivery.sql tests/sql/telegram-delivery.sql
+run_suite sbuild_project_finance_test tests/sql/work-assignments-fixture.sql \
+  supabase/staged/project_finance_ledger.sql tests/sql/project-finance-ledger.sql
