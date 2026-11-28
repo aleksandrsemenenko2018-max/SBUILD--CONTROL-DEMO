@@ -48,3 +48,9 @@ For isolated assertions, run `tests/sql/photo-requirements-fixture.sql`, `supaba
 Customer balance is recorded charges plus refunds minus payments and advances. A negative balance is customer credit. Approved work stays in existing project finance analytics until an agreed charge is entered. This ledger does not infer invoices, due dates, taxes, rates, or customer-facing receipt eligibility. Transport entries stay separate from the existing expense-based margin and the customer report.
 
 Verify the schema in a disposable database with `tests/sql/work-assignments-fixture.sql`, `supabase/staged/project_finance_ledger.sql`, and `tests/sql/project-finance-ledger.sql` in that order. The existing isolated SQL CI runs these files. Browser scenarios stub every Supabase request, including the ledger RPC. When the staged schema is unavailable, the app shows the ledger as unavailable and disables recording.
+
+## Work-photo upload and access
+
+`work_photo_evidence.sql` restricts the existing private work-photo bucket to the author of the report and authorized project managers. It allows JPG, PNG and WebP objects to be registered only after verifying an existing owned Storage object, matching project/report path, size and declared MIME type. Repeat registration of the same evidence returns the existing ID. Supabase Storage's configured 15 MiB limit and MIME allowlist still apply to upload. Visual content scanning is outside this workflow.
+
+For isolated assertions, run `tests/sql/work-photo-evidence-fixture.sql`, `supabase/staged/work_photo_evidence.sql` and `tests/sql/work-photo-evidence.sql` in that order after the photo-requirements fixture and migration.

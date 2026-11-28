@@ -379,3 +379,59 @@ test('worker can view report photos and cannot change their approval requirement
     await panel.locator('#photoUploadForm').waitFor({ state: 'visible' });
   }, photoPanel);
 });
+
+test('worker uploads an allowed photo once and retries its report registration', async () => {
+  const registerPath = '/rest/v1/rpc/sbuild_register_work_photo';
+  const objectPrefix = '/storage/v1/object/sbuild-work-photos/';
+  const picture = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+X2VcAAAAASUVORK5CYII=',
+    'base64',
+  );
+  let uploads = 0;
+  const registrations = [];
+  let photo;
+  await openRolePanel('worker', request => {
+    const { method, pathname, body, contentType, rawBody } = request;
+    if (method === 'POST' && pathname.startsWith(objectPrefix)) {
+      uploads += 1;
+      const path = pathname.slice(objectPrefix.length);
+      assert.match(path, new RegExp('^' + projectId + '/' + reportId + '/[0-9a-f-]{36}\\.png$'));
+      assert.match(contentType, /^multipart\/form-data/);
+      assert.ok(rawBody.includes(picture));
+      return { json: { Key: 'sbuild-work-photos/' + path, Id: 'mock-photo-id' } };
+    }
+    if (method === 'POST' && pathname === registerPath) {
+      registrations.push(body);
+      assert.equal(body.p_report_id, reportId);
+      assert.equal(body.p_stage, 'hidden_before_close');
+      assert.equal(body.p_note, '');
+      if (registrations.length === 1) return { status: 503, json: { message: 'Повторіть збереження' } };
+      photo = { id: 'mock-photo-id', stage: body.p_stage, storage_path: body.p_storage_path };
+      return { json: photo.id };
+    }
+    if (method === 'GET' && pathname === '/rest/v1/sbuild_work_photos') {
+      return { json: photo ? [photo] : [] };
+    }
+    return photoReportMock(request);
+  }, async panel => {
+    await panel.locator('#photoReport').selectOption(reportId);
+    const form = panel.locator('#photoUploadForm');
+    const file = form.locator('input[type="file"]');
+    const save = form.locator('button');
+    await file.setInputFiles({ name: 'test.html', mimeType: 'text/html', buffer: Buffer.from('<html/>') });
+    await save.click();
+    await panel.getByText('Фото JPG, PNG або WebP до 15 МБ', { exact: true }).waitFor();
+    assert.equal(uploads, 0);
+
+    await file.setInputFiles({ name: 'proof.png', mimeType: 'image/png', buffer: picture });
+    await form.locator('select[name="stage"]').selectOption('hidden_before_close');
+    await save.click();
+    await panel.getByText(/Фото завантажено. Спробуйте ще раз зберегти запис/).waitFor();
+    await save.click();
+    await panel.getByText(/Фото збережено/).waitFor();
+    await panel.locator('#photoGallery').getByText(/hidden_before_close/).waitFor();
+    assert.equal(uploads, 1);
+    assert.equal(registrations.length, 2);
+    assert.deepEqual(registrations[0], registrations[1]);
+  }, photoPanel);
+});
