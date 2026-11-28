@@ -72,3 +72,17 @@ test('quotes CSV cells and neutralizes formula-like values from project data', (
   assert.ok(csv.includes(`"'=1+1","2024-02-27","2024-03-04"`));
   assert.ok(csv.includes(`"'  +HYPERLINK(""https://example.invalid"")","3","м²","46.50"\r\n`));
 });
+
+test('loads a stored report with exact totals and ignores private snapshot keys', async () => {
+  const { readClientReportSnapshot } = await import('../modules/client-report.js');
+  const snapshot = {
+    project: 'Об’єкт', period: { start: '2026-11-23', end: '2026-11-29' },
+    groups: [['Зона', [{ date: '2026-11-24', description: 'Монтаж', quantity: '2', unit: 'м²', subtotal: 12300, worker_rate: 991 }]]],
+    knownTotal: 12300, unpricedCount: 0
+  };
+  const report = readClientReportSnapshot(snapshot, '2026-11-23');
+  assert.doesNotMatch(JSON.stringify(report), /worker_rate|991/);
+  assert.equal(report.groups[0][1][0].subtotal, 12300);
+  assert.throws(() => readClientReportSnapshot({ ...snapshot, knownTotal: 151 }, '2026-11-23'), /Підсумок/);
+  assert.throws(() => readClientReportSnapshot(snapshot, '2026-11-30'), /Некоректний/);
+});

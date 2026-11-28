@@ -56,3 +56,40 @@ Verify the schema in a disposable database with `tests/sql/work-assignments-fixt
 For isolated assertions, run `tests/sql/work-photo-evidence-fixture.sql`, `supabase/staged/work_photo_evidence.sql` and `tests/sql/work-photo-evidence.sql` in that order after the photo-requirements fixture and migration.
 
 The owner's charts use the ledger history view for the selected project and calendar date range, up to twelve monthly buckets. They compare recorded customer charges with gross payments and advances, split customer cash movements by type, and show transport separately. Reversed entries are excluded according to their current status. The lifetime balance remains separate from period flows.
+
+## Verified attendance and weekly payout ledger
+
+`attendance_weekly_payroll.sql` uses `sbuild_attendance_daily` as the application ledger. Project owners and assigned foremen can record attendance for active members on past or current Kyiv dates. Workers browse their own history. The older `sbuild_attendance` table remains available for historical administration.
+
+Weekly payroll summaries show only the selected worker’s own amounts outside the owner role. The owner records a completed payment for a closed Monday-to-Sunday period based on finalized reports with complete rates. The server computes and stores the paid amount and records the actor. Duplicate writes return the existing outcome. Work approved later appears as an unpaid difference. The screen records an external payment and does not initiate one. The module leaves disbursement, advances, and separate adjustment payments to a later workflow.
+
+Run `tests/sql/attendance-payroll-fixture.sql`, `supabase/staged/attendance_weekly_payroll.sql` and `tests/sql/attendance-payroll.sql` in that order after the existing production-workflow and photo-requirements fixtures.
+## Тижневі знімки звітів замовнику
+
+`client_report_snapshots.sql` використовує чинну схему об’єктів, зон і звітів
+про виконані роботи, а також перевірку активного директора
+`sbuild_private.is_owner()`. Перевіряйте його через `tests/sql/run-isolated.sh`
+у порожньому тестовому PostgreSQL.
+
+Виклик `sbuild_capture_client_report_week()` створює по одному незмінному
+знімку за попередній завершений ISO-тиждень для кожного активного об’єкта.
+Звичайний запуск використовує календар Києва. Службова роль може також
+указати `p_week_start` (понеділок завершеного тижня), `p_project_id`
+або `p_time_zone => 'UTC'` для тесту чи історичного знімка. Повторний
+виклик повертає кількість нових знімків і зберігає вже зафіксовані дані.
+Пізні затвердження враховуються в ручному звіті, але не переписують
+раніше збережений знімок.
+
+Знімок доступний лише активному директору. Він містить затверджені
+обсяги за зонами, клієнтську вартість робіт і кількість рядків без ціни.
+У ньому немає працівників, внутрішніх ставок, закупівельних цін,
+маржинальності, чернеток, фото, чеків або посилань на сховище. Вільний
+текст опису потребує перевірки директором перед передаванням замовнику.
+Автоматичний знімок не розсилається. Наявний ручний експорт залишається
+доступним окремо.
+
+`client_report_snapshot_schedule.sql` окремо реєструє завдання в
+ізольованій базі з увімкненим Supabase Cron і налаштуванням UTC.
+Реєстрацію виконує роль-власник функції. Завдання планується щопонеділка
+о 06:00 UTC з повторними спробами о 07:00 і 08:00 UTC. У робочій базі ці
+скрипти не застосовувалися.

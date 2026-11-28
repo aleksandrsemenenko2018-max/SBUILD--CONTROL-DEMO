@@ -70,6 +70,35 @@ export function buildClientReport(project, period, work, zones) {
   return { project: String(project), period, groups: [...groups], knownTotal, unpricedCount };
 }
 
+export function readClientReportSnapshot(report, requestedStart) {
+  const period = reportWeek(requestedStart);
+  if (!report || typeof report.project !== 'string' ||
+      report.period?.start !== period.start || report.period?.end !== period.end ||
+      !Array.isArray(report.groups)) throw new Error('Некоректний збережений звіт.');
+  let knownTotal = 0;
+  let unpricedCount = 0;
+  const groups = report.groups.map(group => {
+    if (!Array.isArray(group) || typeof group[0] !== 'string' || !Array.isArray(group[1])) {
+      throw new Error('Некоректний збережений звіт.');
+    }
+    return [group[0], group[1].map(row => {
+      const { date, description, quantity, unit, subtotal } = row ?? {};
+      if (!dateOnly(date) || date < period.start || date > period.end ||
+          [description, quantity, unit].some(value => typeof value !== 'string') ||
+          (subtotal !== null && (!Number.isSafeInteger(subtotal) || subtotal < 0))) {
+        throw new Error('Некоректний рядок збереженого звіту.');
+      }
+      if (subtotal === null) unpricedCount++;
+      else knownTotal += subtotal;
+      return { date, description, quantity, unit, subtotal };
+    })];
+  });
+  if (!Number.isSafeInteger(knownTotal) || report.knownTotal !== knownTotal || report.unpricedCount !== unpricedCount) {
+    throw new Error('Підсумок збереженого звіту не збігається з рядками.');
+  }
+  return { project: report.project, period, groups, knownTotal, unpricedCount };
+}
+
 const photoCaptions = new Map([
   ['before', 'До початку'],
   ['after', 'Після завершення'],

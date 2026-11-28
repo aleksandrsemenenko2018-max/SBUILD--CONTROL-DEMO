@@ -435,3 +435,102 @@ test('worker uploads an allowed photo once and retries its report registration',
     assert.deepEqual(registrations[0], registrations[1]);
   }, photoPanel);
 });
+
+const attendancePanel = { panelSelector: '#sbuildAttendance' };
+const payrollPanel = { panelSelector: '#sbuildWeeklyFinance' };
+const closedWeek = '2025-06-09';
+const attendanceDay = '2025-06-10';
+
+test('foreman records canonical project attendance and sees weekly person-days', async () => {
+  let attendance;
+  await openRolePanel('foreman', ({ method, pathname, body, searchParams }) => {
+    if (method === 'POST' && pathname === '/rest/v1/rpc/sbuild_work_assignment_roster') {
+      assert.equal(body.p_project_id, projectId);
+      return { json: [{ user_id: workerId, full_name: 'Тестовий виконавець' }] };
+    }
+    if (method === 'POST' && pathname === '/rest/v1/rpc/sbuild_record_daily_attendance') {
+      assert.deepEqual(body, {
+        p_project_id: projectId, p_worker_id: workerId, p_date: attendanceDay,
+        p_present: true, p_note: 'Ранкова зміна',
+      });
+      attendance = { worker_id: workerId, work_date: attendanceDay, present: true, notes: body.p_note };
+      return { json: null };
+    }
+    if (method === 'GET' && pathname === '/rest/v1/sbuild_attendance_daily') {
+      assert.equal(searchParams.get('project_id'), 'eq.' + projectId);
+      if (attendance) assert.deepEqual(searchParams.getAll('work_date'), ['gte.' + closedWeek, 'lt.2025-06-16']);
+      return { json: attendance ? [attendance] : [] };
+    }
+  }, async panel => {
+    const form = panel.locator('#sbuildAttendanceForm');
+    await form.locator('#attendanceWorker').selectOption(workerId);
+    await form.locator('#attendanceDate').fill(attendanceDay);
+    await form.locator('#attendanceNotes').fill(' Ранкова зміна ');
+    await form.getByRole('button', { name: 'Зберегти день' }).click();
+    await panel.getByText('День збережено.', { exact: true }).waitFor();
+    const summary = panel.locator('#attendanceSummary');
+    await summary.getByRole('cell', { name: 'Ранкова зміна' }).waitFor();
+    assert.equal(await summary.getByRole('cell', { name: '1', exact: true }).count(), 1);
+  }, attendancePanel);
+});
+
+test('worker reads their attendance but cannot edit it', async () => {
+  await openRolePanel('worker', ({ method, pathname }) => {
+    if (method === 'GET' && pathname === '/rest/v1/sbuild_attendance_daily') {
+      return { json: [{ worker_id: workerId, work_date: attendanceDay, present: false, notes: 'Лікарняний' }] };
+    }
+  }, async panel => {
+    await panel.getByRole('cell', { name: 'Лікарняний' }).waitFor();
+    assert.equal(await panel.getByRole('button', { name: 'Зберегти день' }).count(), 0);
+    assert.equal(await panel.locator('#attendanceProject').inputValue(), projectId);
+  }, attendancePanel);
+});
+
+test('owner records approved payout without trusting a client amount and sees late balance', async () => {
+  let paid = false;
+  let saves = 0;
+  await openRolePanel('owner', ({ method, pathname, body }) => {
+    if (method === 'POST' && pathname === '/rest/v1/rpc/sbuild_weekly_payout_summary') {
+      assert.equal(body.p_project_id, projectId);
+      if (body.p_week_start !== closedWeek) return { json: [] };
+      return { json: [
+        { worker_id: workerId, full_name: 'Тестовий виконавець', report_count: paid ? 3 : 2,
+          missing_rate_count: 0, earned_amount: paid ? 350 : 300,
+          paid_amount: paid ? 300 : null, paid_on: paid ? '2025-06-18' : null },
+        { worker_id: 'incomplete-payroll', full_name: 'Тестова неповна відомість', report_count: 1,
+          missing_rate_count: 1, earned_amount: 0, paid_amount: null, paid_on: null },
+      ] };
+    }
+    if (method === 'POST' && pathname === '/rest/v1/rpc/sbuild_record_weekly_payout') {
+      assert.deepEqual(body, { p_project_id: projectId, p_worker_id: workerId, p_week_start: closedWeek });
+      saves += 1;
+      paid = true;
+      return { json: 'test-payout-id' };
+    }
+  }, async panel => {
+    await panel.locator('#weeklyFinanceDate').fill(closedWeek);
+    await panel.getByText('Є роботи без погодженої розцінки').waitFor();
+    const pay = panel.getByRole('button', { name: 'Позначити фактичну виплату' });
+    assert.equal(await pay.count(), 1);
+    await pay.click();
+    await panel.getByText(/Доплата.*50/).waitFor();
+    assert.equal(await pay.count(), 0);
+    assert.equal(saves, 1);
+  }, payrollPanel);
+});
+
+test('worker payroll shows own earnings and no management or customer prices', async () => {
+  await openRolePanel('worker', ({ method, pathname, body }) => {
+    if (method === 'POST' && pathname === '/rest/v1/rpc/sbuild_weekly_payout_summary') {
+      assert.equal(body.p_project_id, projectId);
+      return { json: [{
+        worker_id: workerId, full_name: 'Тестовий користувач', report_count: 1,
+        missing_rate_count: 0, earned_amount: 200, paid_amount: null, paid_on: null,
+      }] };
+    }
+  }, async panel => {
+    await panel.getByRole('cell', { name: 'Не виплачено' }).waitFor();
+    assert.equal(await panel.getByRole('columnheader', { name: /замовнику|дія/i }).count(), 0);
+    assert.equal(await panel.getByRole('button', { name: 'Позначити фактичну виплату' }).count(), 0);
+  }, payrollPanel);
+});

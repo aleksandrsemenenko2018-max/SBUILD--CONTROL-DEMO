@@ -32,6 +32,11 @@ function mock({ method, pathname, searchParams }, role = "owner") {
     return { json: [{ full_name: 'Test User', role, active: true }] };
   }
   if (pathname === '/rest/v1/sbuild_projects') return { json: [{ id: projectId, name: 'Тестовий об’єкт' }] };
+  if (pathname === '/rest/v1/sbuild_client_report_snapshots') return { json: [{ report: {
+    project: 'Тестовий об’єкт', period: { start: '2026-11-23', end: '2026-11-29' },
+    groups: [['Поверх 2', [{ date: '2026-11-27', description: 'Збережений монтаж', quantity: '2', unit: 'м²', subtotal: 25000, worker_rate: 9999 }]]],
+    knownTotal: 25000, unpricedCount: 0
+  } }] };
   if (pathname === '/rest/v1/sbuild_work_reports') {
     if (searchParams.has('work_date')) {
       return { json: [approved, { ...approved, id: draftId, status: 'submitted', description: 'PRIVATE DRAFT' }] };
@@ -117,6 +122,15 @@ test('prints only approved client work and explicitly selected photos', async ()
     await page.locator('#clientWeek').fill('2026-11-24');
     assert.ok(await page.locator('#clientReportPrint').isDisabled());
     assert.equal(await page.locator('#clientReportResult h1').count(), 0);
+    await page.locator('#clientReportSnapshot').click();
+    assert.match(await page.locator('#clientReportStatus').innerText(), /понеділок/);
+    assert.ok(!seen.some(item => item.pathname.endsWith('/sbuild_client_report_snapshots')));
+    await page.locator('#clientWeek').fill('2026-11-23');
+    await page.locator('#clientReportSnapshot').click();
+    await page.locator('#clientReportResult').filter({ hasText: 'Збережений монтаж' }).waitFor();
+    assert.doesNotMatch(await page.locator('#clientReportResult').innerText(), /9999/);
+    assert.equal(await page.locator('#clientReportResult img').count(), 0);
+
     assertClean();
   } finally {
     await browser.close();

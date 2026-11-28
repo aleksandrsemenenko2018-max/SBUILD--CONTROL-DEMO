@@ -20,14 +20,17 @@ const entries = [
 test('charts only the selected project and inclusive period and switches comparable metrics from loaded data', async () => {
   const browser = await launchBrowser();
   const filters = [];
-  const flow = await openPage(browser, ({ method, pathname, searchParams }) => {
+  const flow = await openPage(browser, async ({ method, pathname, searchParams }) => {
     if (method === 'POST' && pathname === '/auth/v1/token') {
       return { json: { access_token: 'mock-access', refresh_token: 'mock-refresh', expires_in: 3600, user } };
     }
     if (method === 'GET' && pathname === '/auth/v1/user') return { json: user };
     if (method !== 'GET' || !pathname.startsWith('/rest/v1/')) return;
     if (pathname.endsWith('/sbuild_profiles')) return { json: [{ full_name: 'QA Owner', role: 'owner', active: true }] };
-    if (pathname.endsWith('/sbuild_projects')) return { json: [first, second] };
+    if (pathname.endsWith('/sbuild_projects')) {
+      await new Promise(resolve => setTimeout(resolve, 400));
+      return { json: [first, second] };
+    }
     if (pathname.endsWith('/sbuild_project_finance_history') && searchParams.has('occurred_on')) {
       const project = searchParams.get('project_id');
       const dates = searchParams.getAll('occurred_on');
