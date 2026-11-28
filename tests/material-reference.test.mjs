@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { checkMaterialPair, materialReference } from '../modules/material-reference.js';
+import { checkMaterialPair, findMaterialByBarcode, materialReference, readMaterialPhoto } from '../modules/material-reference.js';
 
 test('accepts only a documented manufacturer system and keeps unknown pairs unresolved', () => {
   for (const pair of [['ct17', 'cl51'], ['cl51', 'ct17']]) {
@@ -26,4 +26,25 @@ test('catalog cites only official sites and leaves unverifiable rates blank', ()
     quantity: 8.5, unit: 'кг/м²', thicknessMm: 10
   });
   assert.equal(materialReference.find(product => product.id === 'rotband-finish').consumption, undefined);
+});
+
+test('detects a catalog package without uploading the photo and rejects unclear results', async () => {
+  const pixels = { close() { closed++; } };
+  const file = { type: 'image/png', size: 100 };
+  let closed = 0;
+  class Detector {
+    static async getSupportedFormats() { return ['ean_13']; }
+    async detect() { return [{ rawValue: '4820113531378' }]; }
+  }
+  const found = await readMaterialPhoto(file, Detector, async () => pixels);
+  assert.equal(found.product.id, 'rotband');
+  assert.equal(found.packageSize, '30 кг');
+  assert.equal(closed, 1);
+  assert.equal(findMaterialByBarcode('1234567890123'), null);
+  await assert.rejects(readMaterialPhoto(file, null), /вручну/);
+  class MoreThanOne extends Detector {
+    async detect() { return [{ rawValue: '4820113531378' }, { rawValue: '5901793357355' }]; }
+  }
+  await assert.rejects(readMaterialPhoto(file, MoreThanOne, async () => pixels), /кілька/);
+  assert.equal(closed, 2);
 });

@@ -39,11 +39,17 @@ test('records stock without duplicating its operation key after a network interr
     await reference.locator('summary').click();
     await reference.locator('select').nth(0).selectOption('ct17');
     await reference.locator('select').nth(1).selectOption('cl51');
-    const guidance = reference.getByRole('status');
+    const guidance = reference.locator('[data-reference-result]');
     assert.match(await guidance.innerText(), /Ceresit вказує CT 17/);
     assert.match(await guidance.getByRole('link').getAttribute('href'), /^https:\/\/www\.ceresit\.ua\//);
     await reference.locator('select').nth(1).selectOption('rotband');
     assert.match(await guidance.innerText(), /підтвердження в довіднику немає/);
+    const scan = reference.locator('[data-reference-scan]');
+    await scan.locator('summary').click();
+    await scan.getByLabel('13 цифр зі штрихкоду').fill('4820113531378');
+    await scan.getByRole('button', { name: 'Знайти упаковку' }).click();
+    await scan.getByRole('status').filter({ hasText: 'Knauf Rotband · 30 кг' }).waitFor();
+
     await reference.locator('summary').click();
 
     const form = page.locator('#matMoveForm');

@@ -28,7 +28,7 @@ export function plasterConsumption(area,thicknessMm,kgPerMmM2,bagKg,wastePercent
 }
 
 export function summarizeProjectFinance(approvedWork, expenseTotal, payoutRecords) {
- const safeMoney=value=>Number.isFinite(value)?money(value):null;
+ const safeMoney=value=>Number.isFinite(value)&&Number.isFinite(value*100)?money(value):null;
  const approved=approvedWork?.filter(row=>row.status==="owner_approved");
  function totalRate(rateKey) {
   if(!approved)return null;
@@ -49,6 +49,9 @@ export function summarizeProjectFinance(approvedWork, expenseTotal, payoutRecord
  const revenue=totalRate("client_rate"),laborCost=totalRate("worker_rate");
  let expenseCost=null;
  try { expenseCost=safeMoney(number(expenseTotal)); } catch {}
- const margin=[revenue,laborCost,expenseCost].some(value=>value===null)?null:safeMoney(revenue-laborCost-expenseCost);
- return {revenue,laborCost,expenseCost,margin,paid:payoutTotal("paid"),planned:payoutTotal("planned")};
+ const totalCost=laborCost===null||expenseCost===null?null:safeMoney(laborCost+expenseCost);
+ const margin=revenue===null||totalCost===null?null:safeMoney(revenue-totalCost);
+ const ratio=denominator=>margin===null||!denominator?null:margin/denominator;
+ return {revenue,laborCost,expenseCost,totalCost,margin,marginRate:ratio(revenue),costReturn:ratio(totalCost),
+  paid:payoutTotal("paid"),planned:payoutTotal("planned")};
 }

@@ -93,3 +93,8 @@ Run `tests/sql/attendance-payroll-fixture.sql`, `supabase/staged/attendance_week
 Реєстрацію виконує роль-власник функції. Завдання планується щопонеділка
 о 06:00 UTC з повторними спробами о 07:00 і 08:00 UTC. У робочій базі ці
 скрипти не застосовувалися.
+## Owner daily summary
+
+Apply `owner_daily_summary.sql` after work assignments and communications access policies in an isolated environment, then verify an active owner and an authenticated non-owner. The read-only RPC `sbuild_owner_daily_summary` returns counts per accessible project. The activity counts are a live snapshot. The date defaults to Europe/Kyiv and determines which unfinished assignments are due or overdue. Telegram distribution and scheduling are separate.
+
+For an isolated PostgreSQL fixture run the three files in order with `psql -v ON_ERROR_STOP=1 -f tests/sql/owner-daily-summary-fixture.sql -f supabase/staged/owner_daily_summary.sql -f tests/sql/owner-daily-summary.sql`.

@@ -35,3 +35,5 @@ run_suite sbuild_project_finance_test tests/sql/work-assignments-fixture.sql \
 run_suite sbuild_client_report_snapshot_test tests/sql/work-assignments-fixture.sql \
   tests/sql/client-report-snapshot-fixture.sql supabase/staged/client_report_snapshots.sql \
   tests/sql/client-report-snapshot.sql
+
+run_suite sbuild_owner_daily_summary_test tests/sql/owner-daily-summary-fixture.sql   supabase/staged/owner_daily_summary.sql tests/sql/owner-daily-summary.sql
